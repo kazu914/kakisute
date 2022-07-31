@@ -33,7 +33,7 @@ fn main() -> Result<(), error::ScrawlError> {
     match cli.action {
         Action::New { filename } => {
             let kakisute_file = KakisuteFile::new(filename);
-            let file_path = data_dir.join(&kakisute_file.base_name);
+            let file_path = data_dir.join(&kakisute_file.file_name());
             let _utput = scrawl::edit(file_path).unwrap();
         }
         Action::List {} => {
