@@ -18,3 +18,29 @@ impl KakisuteFile {
         }
     }
 }
+
+#[cfg(test)]
+extern crate speculate;
+#[cfg(test)]
+use speculate::speculate;
+
+#[cfg(test)]
+speculate! {
+    use chrono::TimeZone;
+    describe "generate_base_name" {
+
+        before {
+            let date = Local.ymd(2022,1,10).and_hms(16,30,15);;
+        }
+
+        it "joins datetime and given filename" {
+            let base_name = KakisuteFile::generate_base_name(date,Some("test.sql".to_string()));
+            assert_eq!(base_name,"2022_01_10_16_30_15_test.sql")
+        }
+
+        it "use only datetime if filename is not given" {
+            let base_name = KakisuteFile::generate_base_name(date,None);
+            assert_eq!(base_name,"2022_01_10_16_30_15.txt")
+        }
+    }
+}
