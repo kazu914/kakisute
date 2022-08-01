@@ -27,6 +27,8 @@ enum Action {
         /// <Optional> Specify file name
         filename: Option<String>,
     },
+
+    /// Print kakisute files
     List {},
 }
 
