@@ -1,3 +1,8 @@
+use std::{
+    fs,
+    io::{self, Write},
+};
+
 use clap::{Parser, Subcommand};
 use scrawl::error;
 
@@ -37,7 +42,14 @@ fn main() -> Result<(), error::ScrawlError> {
             let _utput = scrawl::edit(file_path).unwrap();
         }
         Action::List {} => {
-            print!("List here");
+            for file in fs::read_dir(data_dir.path()).unwrap() {
+                let kakisute_file = KakisuteFile::from_path(&file.unwrap().path());
+                if let Some(kakisute_file) = kakisute_file {
+                    let stdout = io::stdout();
+                    let mut handle = io::BufWriter::new(stdout);
+                    writeln!(handle, "{}", kakisute_file.file_name()).unwrap();
+                }
+            }
         }
     }
     Ok(())

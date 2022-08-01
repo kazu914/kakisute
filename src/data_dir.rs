@@ -40,6 +40,10 @@ impl DataDir {
         self.path.join(filename)
     }
 
+    pub fn path(&self) -> &PathBuf {
+        &self.path
+    }
+
     fn create_dir(path: &PathBuf) {
         fs::create_dir_all(&path).unwrap_or_else(|err| {
             eprintln!("Error: Can't make data directory: {:?}", path);

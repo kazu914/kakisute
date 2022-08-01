@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use chrono::{DateTime, Local};
 pub struct KakisuteFile {
     file_name: String,
@@ -11,6 +13,15 @@ impl KakisuteFile {
 
     pub fn file_name(&self) -> &str {
         &self.file_name
+    }
+
+    pub fn from_path(path: &PathBuf) -> Option<Self> {
+        if path.is_file() {
+            let file_name = path.file_name().unwrap().to_string_lossy().to_string();
+            Some(KakisuteFile { file_name })
+        } else {
+            None
+        }
     }
 
     fn generate_file_name(date: DateTime<Local>, filename: Option<String>) -> String {
