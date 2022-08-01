@@ -15,7 +15,14 @@ pub struct DataDir {
 impl DataDir {
     pub fn setup(dir: Option<String>) -> Self {
         let data_dir_path = if let Some(dir) = dir {
-            Path::new(&dir).to_owned()
+            let expanded_dir = shellexpand::full(&dir)
+                .unwrap_or_else(|err| {
+                    eprintln!("Error: Can't understand data directory: {:?}", dir);
+                    eprintln!("{:?}", err);
+                    process::exit(1)
+                })
+                .to_string();
+            Path::new(&expanded_dir).to_owned()
         } else {
             let project_dirs = ProjectDirs::from("", "", PKG_NAME).unwrap();
             project_dirs.data_dir().to_path_buf()
