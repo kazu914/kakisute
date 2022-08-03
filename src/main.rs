@@ -27,6 +27,12 @@ enum Action {
 
     /// Print kakisute files
     List {},
+
+    /// Edit existing kakiste
+    Edit {
+        #[clap(long = "latest")]
+        is_latest: bool,
+    },
 }
 
 fn main() -> Result<(), error::ScrawlError> {
@@ -46,6 +52,15 @@ fn main() -> Result<(), error::ScrawlError> {
                 let stdout = io::stdout();
                 let mut handle = io::BufWriter::new(stdout);
                 writeln!(handle, "{}", file.file_name()).unwrap();
+            }
+        }
+        Action::Edit { is_latest } => {
+            if is_latest {
+                let kakisute_list = KakisuteList::from_dir(data_dir.read_dir());
+                let file_path = data_dir.join(&kakisute_list.get_latest().file_name());
+                let _utput = scrawl::edit(file_path).unwrap();
+            } else {
+                println!("not latest is not supported yet")
             }
         }
     };
