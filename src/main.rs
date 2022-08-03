@@ -1,13 +1,10 @@
-use std::{
-    fs,
-    io::{self, Write},
-};
+use std::io::{self, Write};
 
 use clap::{Parser, Subcommand};
 use scrawl::error;
 
-use kakisute::data_dir::DataDir;
 use kakisute::kakisute_file::KakisuteFile;
+use kakisute::{data_dir::DataDir, kakisute_list::KakisuteList};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -44,15 +41,13 @@ fn main() -> Result<(), error::ScrawlError> {
             let _utput = scrawl::edit(file_path).unwrap();
         }
         Action::List {} => {
-            for file in fs::read_dir(data_dir.path()).unwrap() {
-                let kakisute_file = KakisuteFile::from_path(&file.unwrap().path());
-                if let Some(kakisute_file) = kakisute_file {
-                    let stdout = io::stdout();
-                    let mut handle = io::BufWriter::new(stdout);
-                    writeln!(handle, "{}", kakisute_file.file_name()).unwrap();
-                }
+            let kakisute_list = KakisuteList::from_dir(data_dir.read_dir());
+            for file in kakisute_list.files() {
+                let stdout = io::stdout();
+                let mut handle = io::BufWriter::new(stdout);
+                writeln!(handle, "{}", file.file_name()).unwrap();
             }
         }
-    }
+    };
     Ok(())
 }

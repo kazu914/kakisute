@@ -1,5 +1,5 @@
 use std::{
-    fs,
+    fs::{self, ReadDir},
     path::{Path, PathBuf},
     process,
 };
@@ -42,6 +42,10 @@ impl DataDir {
 
     pub fn path(&self) -> &PathBuf {
         &self.path
+    }
+
+    pub fn read_dir(&self) -> ReadDir {
+        fs::read_dir(self.path()).unwrap()
     }
 
     fn create_dir(path: &PathBuf) {
