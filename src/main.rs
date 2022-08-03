@@ -32,6 +32,7 @@ enum Action {
     Edit {
         #[clap(long = "latest")]
         is_latest: bool,
+        filename: Option<String>,
     },
 }
 
@@ -54,13 +55,33 @@ fn main() -> Result<(), error::ScrawlError> {
                 writeln!(handle, "{}", file.file_name()).unwrap();
             }
         }
-        Action::Edit { is_latest } => {
-            if is_latest {
-                let kakisute_list = KakisuteList::from_dir(data_dir.read_dir());
-                let file_path = data_dir.join(&kakisute_list.get_latest().file_name());
-                let _utput = scrawl::edit(file_path).unwrap();
-            } else {
-                println!("not latest is not supported yet")
+        Action::Edit {
+            is_latest,
+            filename,
+        } => {
+            let kakisute_list = KakisuteList::from_dir(data_dir.read_dir());
+            match filename {
+                Some(filename) => {
+                    let kakisute = kakisute_list.get_by_filename(&filename);
+                    match kakisute {
+                        Some(kakiste) => {
+                            let file_path = data_dir.join(kakiste.file_name());
+                            let _utput = scrawl::edit(file_path).unwrap();
+                        }
+                        None => {
+                            println!("Can not find: {}", filename);
+                        }
+                    }
+                }
+                None => {
+                    if is_latest {
+                        let kakisute_list = KakisuteList::from_dir(data_dir.read_dir());
+                        let file_path = data_dir.join(&kakisute_list.get_latest().file_name());
+                        let _utput = scrawl::edit(file_path).unwrap();
+                    } else {
+                        println!("edit expect a file name or \"--latest\" flag")
+                    }
+                }
             }
         }
     };
