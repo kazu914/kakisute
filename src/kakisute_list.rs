@@ -1,6 +1,8 @@
-use std::fs::ReadDir;
-
 use crate::kakisute_file::KakisuteFile;
+use std::{
+    fs::ReadDir,
+    io::{self, Write},
+};
 
 pub struct KakisuteList {
     files: Vec<KakisuteFile>,
@@ -26,16 +28,12 @@ impl KakisuteList {
         kakisute_list
     }
 
-    pub fn files(&self) -> &Vec<KakisuteFile> {
-        &self.files
-    }
-
-    pub fn sort(&mut self) {
-        self.files.sort();
-    }
-
-    pub fn add(&mut self, file: KakisuteFile) {
-        self.files.push(file);
+    pub fn print_list(&self) {
+        let stdout = io::stdout();
+        let mut handle = io::BufWriter::new(stdout);
+        for file in &self.files {
+            writeln!(handle, "{}", file.file_name()).unwrap();
+        }
     }
 
     pub fn get_latest(&self) -> &KakisuteFile {
@@ -45,4 +43,13 @@ impl KakisuteList {
     pub fn get_by_filename(&self, filename: &str) -> Option<&KakisuteFile> {
         self.files.iter().find(|file| file.file_name() == filename)
     }
+
+    fn sort(&mut self) {
+        self.files.sort();
+    }
+
+    fn add(&mut self, file: KakisuteFile) {
+        self.files.push(file);
+    }
+
 }

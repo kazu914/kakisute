@@ -1,5 +1,3 @@
-use std::io::{self, Write};
-
 use clap::{Parser, Subcommand};
 use scrawl::error;
 
@@ -49,11 +47,7 @@ fn main() -> Result<(), error::ScrawlError> {
         }
         Action::List {} => {
             let kakisute_list = KakisuteList::from_dir(data_dir.read_dir());
-            for file in kakisute_list.files() {
-                let stdout = io::stdout();
-                let mut handle = io::BufWriter::new(stdout);
-                writeln!(handle, "{}", file.file_name()).unwrap();
-            }
+            kakisute_list.print_list();
         }
         Action::Edit {
             is_latest,
