@@ -1,4 +1,5 @@
 use crate::data_dir::DataDir;
+use crate::editor;
 use crate::kakisute_list::KakisuteList;
 
 pub struct EditService<'a> {
@@ -24,24 +25,20 @@ impl<'a> EditService<'a> {
                 }
             }
         }
-        let kakisute_list = KakisuteList::from_dir(self.data_dir.read_dir());
-        kakisute_list.print_list();
     }
 
-    fn edit_latest(&self, kakisute_list: KakisuteList) {
-        let file_path = self.data_dir.join(&kakisute_list.get_latest().file_name());
-        let _utput = scrawl::edit(file_path).unwrap();
-    }
     fn edit_by_filename(&self, kakisute_list: KakisuteList, filename: String) {
         let kakisute = kakisute_list.get_by_filename(&filename);
         match kakisute {
-            Some(kakiste) => {
-                let file_path = self.data_dir.join(kakiste.file_name());
-                let _utput = scrawl::edit(file_path).unwrap();
+            Some(kakisute) => {
+                editor::edit(&self.data_dir, &kakisute.file_name());
             }
             None => {
                 println!("Can not find: {}", filename);
             }
         }
+    }
+    fn edit_latest(&self, kakisute_list: KakisuteList) {
+        editor::edit(&self.data_dir, &kakisute_list.get_latest().file_name());
     }
 }

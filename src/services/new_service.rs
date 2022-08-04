@@ -1,4 +1,5 @@
 use crate::data_dir::DataDir;
+use crate::editor;
 use crate::kakisute_file::KakisuteFile;
 
 pub struct NewService<'a> {
@@ -12,7 +13,6 @@ impl<'a> NewService<'a> {
 
     pub fn create(&self, filename: Option<String>) {
         let kakisute_file = KakisuteFile::new(filename);
-        let file_path = self.data_dir.join(&kakisute_file.file_name());
-        let _utput = scrawl::edit(file_path).unwrap();
+        editor::edit(self.data_dir, &kakisute_file.file_name());
     }
 }
