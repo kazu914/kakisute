@@ -1,8 +1,6 @@
 use clap::{Parser, Subcommand};
+use kakisute::{data_dir::DataDir, services::*};
 use scrawl::error;
-
-use kakisute::kakisute_file::KakisuteFile;
-use kakisute::{data_dir::DataDir, kakisute_list::KakisuteList};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -41,42 +39,19 @@ fn main() -> Result<(), error::ScrawlError> {
 
     match cli.action {
         Action::New { filename } => {
-            let kakisute_file = KakisuteFile::new(filename);
-            let file_path = data_dir.join(&kakisute_file.file_name());
-            let _utput = scrawl::edit(file_path).unwrap();
+            let new_service = new_service::NewService::new(&data_dir);
+            new_service.create(filename);
         }
         Action::List {} => {
-            let kakisute_list = KakisuteList::from_dir(data_dir.read_dir());
-            kakisute_list.print_list();
+            let list_service = list_service::ListService::new(&data_dir);
+            list_service.list();
         }
         Action::Edit {
             is_latest,
             filename,
         } => {
-            let kakisute_list = KakisuteList::from_dir(data_dir.read_dir());
-            match filename {
-                Some(filename) => {
-                    let kakisute = kakisute_list.get_by_filename(&filename);
-                    match kakisute {
-                        Some(kakiste) => {
-                            let file_path = data_dir.join(kakiste.file_name());
-                            let _utput = scrawl::edit(file_path).unwrap();
-                        }
-                        None => {
-                            println!("Can not find: {}", filename);
-                        }
-                    }
-                }
-                None => {
-                    if is_latest {
-                        let kakisute_list = KakisuteList::from_dir(data_dir.read_dir());
-                        let file_path = data_dir.join(&kakisute_list.get_latest().file_name());
-                        let _utput = scrawl::edit(file_path).unwrap();
-                    } else {
-                        println!("edit expect a file name or \"--latest\" flag")
-                    }
-                }
-            }
+            let edit_service = edit_service::EditService::new(&data_dir);
+            edit_service.edit(is_latest, filename);
         }
     };
     Ok(())
