@@ -40,10 +40,6 @@ impl DataDir {
         self.path.join(file_name)
     }
 
-    pub fn path(&self) -> &PathBuf {
-        &self.path
-    }
-
     pub fn read_dir(&self) -> ReadDir {
         fs::read_dir(self.path()).unwrap()
     }
@@ -54,6 +50,10 @@ impl DataDir {
             eprintln!("{:?}", err);
             process::exit(1)
         });
+    }
+
+    fn path(&self) -> &PathBuf {
+        &self.path
     }
 
     fn check_readonly(path: &PathBuf) {
