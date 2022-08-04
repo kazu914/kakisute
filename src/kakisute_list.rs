@@ -40,8 +40,8 @@ impl KakisuteList {
         self.files.iter().max().unwrap()
     }
 
-    pub fn get_by_filename(&self, filename: &str) -> Option<&KakisuteFile> {
-        self.files.iter().find(|file| file.file_name() == filename)
+    pub fn get_by_file_name(&self, file_name: &str) -> Option<&KakisuteFile> {
+        self.files.iter().find(|file| file.file_name() == file_name)
     }
 
     fn sort(&mut self) {
@@ -51,5 +51,4 @@ impl KakisuteList {
     fn add(&mut self, file: KakisuteFile) {
         self.files.push(file);
     }
-
 }

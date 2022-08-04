@@ -12,9 +12,9 @@ const DATE_FORMAT: &str = "%Y_%m_%d_%H_%M_%S";
 const DATE_FORMAT_LENGTH: usize = 19;
 
 impl KakisuteFile {
-    pub fn new(filename: Option<String>) -> Self {
+    pub fn new(file_name: Option<String>) -> Self {
         let created_at = Local::now();
-        let file_name = KakisuteFile::generate_file_name(created_at, filename);
+        let file_name = KakisuteFile::generate_file_name(created_at, file_name);
         KakisuteFile {
             file_name,
             created_at: None,
@@ -42,10 +42,10 @@ impl KakisuteFile {
         }
     }
 
-    fn generate_file_name(date: DateTime<Local>, filename: Option<String>) -> String {
+    fn generate_file_name(date: DateTime<Local>, file_name: Option<String>) -> String {
         let prefix = date.format(DATE_FORMAT).to_string();
-        if let Some(filename) = filename {
-            prefix + "_" + &filename
+        if let Some(file_name) = file_name {
+            prefix + "_" + &file_name
         } else {
             prefix + ".txt"
         }
@@ -81,12 +81,12 @@ speculate! {
             let date = Local.ymd(2022,1,10).and_hms(16,30,15);;
         }
 
-        it "joins datetime and given filename" {
+        it "joins datetime and given file_name" {
             let file_name = KakisuteFile::generate_file_name(date,Some("test.sql".to_string()));
             assert_eq!(file_name,"2022_01_10_16_30_15_test.sql")
         }
 
-        it "use only datetime if filename is not given" {
+        it "use only datetime if file_name is not given" {
             let file_name = KakisuteFile::generate_file_name(date,None);
             assert_eq!(file_name,"2022_01_10_16_30_15.txt")
         }

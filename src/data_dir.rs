@@ -36,8 +36,8 @@ impl DataDir {
         }
     }
 
-    pub fn join(&self, filename: &str) -> PathBuf {
-        self.path.join(filename)
+    pub fn join(&self, file_name: &str) -> PathBuf {
+        self.path.join(file_name)
     }
 
     pub fn path(&self) -> &PathBuf {

@@ -18,7 +18,7 @@ enum Action {
     /// Create new kakisute
     New {
         /// <Optional> Specify file name
-        filename: Option<String>,
+        file_name: Option<String>,
     },
 
     /// Print kakisute files
@@ -28,7 +28,7 @@ enum Action {
     Edit {
         #[clap(long = "latest")]
         is_latest: bool,
-        filename: Option<String>,
+        file_name: Option<String>,
     },
 }
 
@@ -38,9 +38,9 @@ fn main() -> Result<(), error::ScrawlError> {
     let data_dir = DataDir::setup(cli.data_dir);
 
     match cli.action {
-        Action::New { filename } => {
+        Action::New { file_name } => {
             let new_service = new_service::NewService::new(&data_dir);
-            new_service.create(filename);
+            new_service.create(file_name);
         }
         Action::List {} => {
             let list_service = list_service::ListService::new(&data_dir);
@@ -48,10 +48,10 @@ fn main() -> Result<(), error::ScrawlError> {
         }
         Action::Edit {
             is_latest,
-            filename,
+            file_name,
         } => {
             let edit_service = edit_service::EditService::new(&data_dir);
-            edit_service.edit(is_latest, filename);
+            edit_service.edit(is_latest, file_name);
         }
     };
     Ok(())
