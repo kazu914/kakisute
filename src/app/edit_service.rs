@@ -1,16 +1,8 @@
-use crate::data_dir::DataDir;
-use crate::editor;
-use crate::kakisute_list::KakisuteList;
+use crate::{editor, kakisute_list::KakisuteList};
 
-pub struct EditService<'a> {
-    data_dir: &'a DataDir,
-}
+use super::App;
 
-impl<'a> EditService<'a> {
-    pub fn new(data_dir: &'a DataDir) -> Self {
-        EditService { data_dir }
-    }
-
+impl App {
     pub fn edit(&self, is_latest: bool, file_name: Option<String>) {
         let kakisute_list = KakisuteList::from_dir(self.data_dir.read_dir());
         match file_name {
