@@ -3,6 +3,7 @@ use std::{
     fs::ReadDir,
     io::{self, Write},
 };
+mod selector;
 
 pub struct KakisuteList {
     files: Vec<KakisuteFile>,
@@ -34,14 +35,6 @@ impl KakisuteList {
         for file in &self.files {
             writeln!(handle, "{}", file.file_name()).unwrap();
         }
-    }
-
-    pub fn get_latest(&self) -> &KakisuteFile {
-        self.files.iter().max().unwrap()
-    }
-
-    pub fn get_by_file_name(&self, file_name: &str) -> Option<&KakisuteFile> {
-        self.files.iter().find(|file| file.file_name() == file_name)
     }
 
     fn sort(&mut self) {
