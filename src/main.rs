@@ -30,6 +30,13 @@ enum Action {
         is_latest: bool,
         file_name: Option<String>,
     },
+
+    /// Show existing kakisute
+    Show {
+        #[clap(long = "latest")]
+        is_latest: bool,
+        file_name: Option<String>,
+    },
 }
 
 fn main() -> Result<(), error::ScrawlError> {
@@ -49,6 +56,12 @@ fn main() -> Result<(), error::ScrawlError> {
             file_name,
         } => {
             app.edit(is_latest, file_name);
+        }
+        Action::Show {
+            is_latest,
+            file_name,
+        } => {
+            app.show(is_latest, file_name);
         }
     };
     Ok(())
