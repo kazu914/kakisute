@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use kakisute::app::App;
+use kakisute::{app::App, kakisute_list};
 use scrawl::error;
 
 #[derive(Parser, Debug)]
@@ -55,14 +55,16 @@ fn main() -> Result<(), error::ScrawlError> {
             is_latest,
             file_name,
         } => {
-            app.edit(is_latest, file_name);
+            let query = kakisute_list::single_query::SingleQuery::new(is_latest, file_name);
+            app.edit(query);
         }
         Action::Show {
             is_latest,
             file_name,
         } => {
-            app.show(is_latest, file_name);
+            let query = kakisute_list::single_query::SingleQuery::new(is_latest, file_name);
+            app.show(query);
         }
-    };
+    }
     Ok(())
 }

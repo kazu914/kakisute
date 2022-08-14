@@ -4,6 +4,7 @@ use std::{
     io::{self, Write},
 };
 mod selector;
+pub mod single_query;
 
 pub struct KakisuteList {
     files: Vec<KakisuteFile>,

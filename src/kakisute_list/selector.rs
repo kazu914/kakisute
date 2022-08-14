@@ -1,13 +1,11 @@
 use crate::kakisute_file::KakisuteFile;
 
-use super::KakisuteList;
+use super::{single_query::SingleQuery, KakisuteList};
 
 impl KakisuteList {
-    pub fn single_select(
-        &self,
-        is_latest: bool,
-        file_name: Option<String>,
-    ) -> Option<&KakisuteFile> {
+    pub fn single_select(&self, query: SingleQuery) -> Option<&KakisuteFile> {
+        let is_latest = query.is_latest;
+        let file_name = query.file_name;
         match file_name {
             Some(file_name) => self.get_by_file_name(&file_name),
             None => {

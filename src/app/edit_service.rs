@@ -1,10 +1,10 @@
-use crate::editor;
+use crate::{editor, kakisute_list::single_query::SingleQuery};
 
 use super::App;
 
 impl App {
-    pub fn edit(&self, is_latest: bool, file_name: Option<String>) {
-        let kakisute = self.kakisute_list.single_select(is_latest, file_name);
+    pub fn edit(&self, query: SingleQuery) {
+        let kakisute = self.kakisute_list.single_select(query);
 
         match kakisute {
             Some(kakisute) => {
