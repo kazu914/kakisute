@@ -8,7 +8,7 @@ impl App {
 
         match kakisute {
             Some(kakisute) => {
-                editor::edit(&self.data_dir, &kakisute.file_name());
+                editor::edit(&self.data_dir, kakisute.file_name());
             }
             None => {
                 println!("Can not find one matching the query");

@@ -13,7 +13,6 @@ impl App {
                     self.data_dir
                         .join(kakisute.file_name())
                         .to_string_lossy()
-                        .to_string()
                 );
             }
             None => {

@@ -33,13 +33,10 @@ impl KakisuteFile {
         let file_name = path.file_name().unwrap().to_string_lossy().to_string();
         let created_at = KakisuteFile::get_created_at_from_file_name(&file_name);
 
-        match created_at.single() {
-            None => None,
-            Some(created_at) => Some(KakisuteFile {
+        created_at.single().map(|created_at| KakisuteFile {
                 file_name,
                 created_at: Some(created_at),
-            }),
-        }
+            })
     }
 
     fn generate_file_name(date: DateTime<Local>, file_name: Option<String>) -> String {

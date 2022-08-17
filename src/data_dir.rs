@@ -32,7 +32,7 @@ impl DataDir {
         Self::check_readonly(&data_dir_path);
 
         DataDir {
-            path: data_dir_path.to_path_buf(),
+            path: data_dir_path,
         }
     }
 
