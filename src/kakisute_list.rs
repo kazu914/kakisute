@@ -10,6 +10,12 @@ pub struct KakisuteList {
     files: Vec<KakisuteFile>,
 }
 
+impl Default for KakisuteList {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl KakisuteList {
     pub fn new() -> Self {
         KakisuteList { files: vec![] }
