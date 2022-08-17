@@ -10,9 +10,7 @@ impl App {
             Some(kakisute) => {
                 println!(
                     "{}",
-                    self.data_dir
-                        .join(kakisute.file_name())
-                        .to_string_lossy()
+                    self.data_dir.join(kakisute.file_name()).to_string_lossy()
                 );
             }
             None => {

@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::Path;
 
 use chrono::{DateTime, Local, LocalResult, NaiveDateTime, TimeZone};
 
@@ -25,7 +25,7 @@ impl KakisuteFile {
         &self.file_name
     }
 
-    pub fn from_path(path: &PathBuf) -> Option<Self> {
+    pub fn from_path(path: &Path) -> Option<Self> {
         if !path.is_file() {
             return None;
         };
@@ -34,9 +34,9 @@ impl KakisuteFile {
         let created_at = KakisuteFile::get_created_at_from_file_name(&file_name);
 
         created_at.single().map(|created_at| KakisuteFile {
-                file_name,
-                created_at: Some(created_at),
-            })
+            file_name,
+            created_at: Some(created_at),
+        })
     }
 
     fn generate_file_name(date: DateTime<Local>, file_name: Option<String>) -> String {
