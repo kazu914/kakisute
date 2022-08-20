@@ -1,4 +1,4 @@
-use std::process::Command;
+use std::fs;
 
 use crate::data_dir::DataDir;
 
@@ -9,8 +9,6 @@ pub fn edit(data_dir: &DataDir, file_name: &str) {
 
 pub fn show(data_dir: &DataDir, file_name: &str) {
     let file_path = data_dir.join(file_name);
-    Command::new("cat")
-        .arg(file_path)
-        .spawn()
-        .expect("Not found cat command");
+    let contents = fs::read_to_string(file_path).unwrap();
+    println!("{}", contents);
 }
