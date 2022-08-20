@@ -1,4 +1,4 @@
-use crate::{operation, kakisute_list::single_query::SingleQuery};
+use crate::{kakisute_list::single_query::SingleQuery, operation};
 
 use super::App;
 

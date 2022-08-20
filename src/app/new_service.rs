@@ -1,4 +1,4 @@
-use crate::{operation, kakisute_file::KakisuteFile};
+use crate::{kakisute_file::KakisuteFile, operation};
 
 use super::App;
 
