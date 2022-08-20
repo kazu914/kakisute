@@ -1,4 +1,4 @@
-use crate::{editor, kakisute_list::single_query::SingleQuery};
+use crate::{kakisute_list::single_query::SingleQuery, operation};
 
 use super::App;
 
@@ -8,7 +8,7 @@ impl App {
 
         match kakisute {
             Some(kakisute) => {
-                editor::edit(&self.data_dir, kakisute.file_name());
+                operation::edit(&self.data_dir, kakisute.file_name());
             }
             None => {
                 println!("Can not find one matching the query");

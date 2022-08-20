@@ -1,6 +1,4 @@
-use std::process::Command;
-
-use crate::kakisute_list::single_query::SingleQuery;
+use crate::{kakisute_list::single_query::SingleQuery, operation};
 
 use super::App;
 
@@ -10,16 +8,7 @@ impl App {
 
         match kakisute {
             Some(kakisute) => {
-                let path = self
-                    .data_dir
-                    .join(kakisute.file_name())
-                    .into_os_string()
-                    .into_string()
-                    .unwrap();
-                Command::new("cat")
-                    .arg(path)
-                    .spawn()
-                    .expect("Not found cat command");
+                operation::show(&self.data_dir, kakisute.file_name());
             }
             None => {
                 println!("Can not find one matching the query");
