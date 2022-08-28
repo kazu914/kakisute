@@ -6,6 +6,7 @@ use std::{
 mod selector;
 pub mod single_query;
 
+#[derive(Clone, Debug)]
 pub struct KakisuteList {
     files: Vec<KakisuteFile>,
 }
@@ -42,6 +43,10 @@ impl KakisuteList {
         for file in &self.files {
             writeln!(handle, "{}", file.file_name()).unwrap();
         }
+    }
+
+    pub fn get_list(&self) -> Vec<KakisuteFile> {
+        self.files.clone()
     }
 
     fn sort(&mut self) {

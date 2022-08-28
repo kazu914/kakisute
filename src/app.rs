@@ -3,6 +3,7 @@ mod inspect_service;
 mod list_service;
 mod new_service;
 mod show_service;
+mod ui;
 
 use crate::{data_dir::DataDir, kakisute_list::KakisuteList};
 

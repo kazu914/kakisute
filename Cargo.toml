@@ -11,6 +11,8 @@ scrawl = "1.1.0"
 directories = "4.0.1"
 chrono = "0.4"
 shellexpand = "2.1"
+tui = "0.19"
+crossterm = "0.25"
 
 [dev-dependencies]
 speculate = "0.1"

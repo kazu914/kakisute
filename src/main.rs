@@ -44,12 +44,15 @@ enum Action {
         is_latest: bool,
         file_name: Option<String>,
     },
+
+    /// Start TUI mode
+    Interact {},
 }
 
 fn main() -> Result<(), error::ScrawlError> {
     let cli = Args::parse();
 
-    let app = App::new(cli.data_dir);
+    let mut app = App::new(cli.data_dir);
 
     match cli.action {
         Action::New { file_name } => {
@@ -78,6 +81,9 @@ fn main() -> Result<(), error::ScrawlError> {
         } => {
             let query = kakisute_list::single_query::SingleQuery::new(is_latest, file_name);
             app.inspect(query);
+        }
+        Action::Interact {} => {
+            app.ui().unwrap();
         }
     }
     Ok(())
