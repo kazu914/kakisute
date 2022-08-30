@@ -1,4 +1,4 @@
-use crate::kakisute_file::KakisuteFile;
+use crate::{kakisute_file::KakisuteFile, operation};
 
 use super::App;
 
@@ -15,7 +15,8 @@ use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
     style::{Modifier, Style},
-    widgets::{Block, Borders, List, ListItem, ListState},
+    text::Text,
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     Frame, Terminal,
 };
 
@@ -145,7 +146,8 @@ impl App {
             .constraints(
                 [
                     Constraint::Percentage(10),
-                    Constraint::Percentage(80),
+                    Constraint::Percentage(40),
+                    Constraint::Percentage(40),
                     Constraint::Percentage(10),
                 ]
                 .as_ref(),
@@ -165,6 +167,25 @@ impl App {
         let mut state = ListState::default();
 
         state.select(tui.selected_list_index);
+
         f.render_stateful_widget(list, chunks[1], &mut state);
+
+        let contents = self.get_selected_kakisute(tui.selected_list_index);
+
+        if let Some(contents) = contents {
+            let paragraph = Paragraph::new(Text::from(contents))
+                .block(Block::default().title("Contents").borders(Borders::ALL));
+            f.render_widget(paragraph, chunks[2])
+        }
+    }
+
+    fn get_selected_kakisute(&self, index: Option<usize>) -> Option<String> {
+        let selected_kakisute = self.kakisute_list.get(index);
+        match selected_kakisute {
+            Some(selected_kakisute) => {
+                operation::get_content(&self.data_dir, selected_kakisute.file_name())
+            }
+            None => None,
+        }
     }
 }

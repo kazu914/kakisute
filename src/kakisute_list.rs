@@ -56,4 +56,11 @@ impl KakisuteList {
     fn add(&mut self, file: KakisuteFile) {
         self.files.push(file);
     }
+
+    pub fn get(&self, index: Option<usize>) -> Option<&KakisuteFile> {
+        match index {
+            Some(index) => self.files.get(index),
+            None => None,
+        }
+    }
 }
