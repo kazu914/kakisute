@@ -133,9 +133,8 @@ impl App {
                             tui.select_previous();
                         }
                         (KeyCode::Char('e'), KeyModifiers::NONE) => {
-                            let index = tui.selected_list_index;
-                            let selected_kakisute = &self.kakisute_list.get(index);
-                            match selected_kakisute {
+                            let kakisute = self.get_kakisute(tui.selected_list_index);
+                            match kakisute {
                                 Some(kakisute) => {
                                     execute!(
                                         terminal.backend_mut(),
@@ -191,7 +190,7 @@ impl App {
 
         f.render_stateful_widget(list, chunks[1], &mut state);
 
-        let content = self.get_selected_kakisute_contetent(tui.selected_list_index);
+        let content = self.get_kakisute_contetent(tui.selected_list_index);
 
         if let Some(content) = content {
             let paragraph = Paragraph::new(Text::from(content))
@@ -204,13 +203,17 @@ impl App {
         f.render_widget(help, chunks[3]);
     }
 
-    fn get_selected_kakisute_contetent(&self, index: Option<usize>) -> Option<String> {
-        let selected_kakisute = self.kakisute_list.get(index);
-        match selected_kakisute {
-            Some(selected_kakisute) => {
-                operation::get_content(&self.data_dir, selected_kakisute.file_name())
+    fn get_kakisute_contetent(&self, index: Option<usize>) -> Option<String> {
+        let kakisute = self.get_kakisute(index);
+        match kakisute {
+            Some(kakisute) => {
+                operation::get_content(&self.data_dir, kakisute.file_name())
             }
             None => None,
         }
+    }
+
+    fn get_kakisute(&self, index: Option<usize>) -> Option<&KakisuteFile> {
+        self.kakisute_list.get(index)
     }
 }
