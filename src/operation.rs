@@ -8,10 +8,10 @@ pub fn edit(data_dir: &DataDir, file_name: &str) {
 }
 
 pub fn show(data_dir: &DataDir, file_name: &str) {
-    let contents = get_content(data_dir, file_name);
-    match contents {
-        Some(contents) => {
-            println!("{}", contents);
+    let content = get_content(data_dir, file_name);
+    match content {
+        Some(content) => {
+            println!("{}", content);
         }
         None => {}
     }

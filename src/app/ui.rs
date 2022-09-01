@@ -191,11 +191,11 @@ impl App {
 
         f.render_stateful_widget(list, chunks[1], &mut state);
 
-        let contents = self.get_selected_kakisute(tui.selected_list_index);
+        let content = self.get_selected_kakisute_contetent(tui.selected_list_index);
 
-        if let Some(contents) = contents {
-            let paragraph = Paragraph::new(Text::from(contents))
-                .block(Block::default().title("Contents").borders(Borders::ALL));
+        if let Some(content) = content {
+            let paragraph = Paragraph::new(Text::from(content))
+                .block(Block::default().title("Content").borders(Borders::ALL));
             f.render_widget(paragraph, chunks[2])
         }
 
@@ -204,7 +204,7 @@ impl App {
         f.render_widget(help, chunks[3]);
     }
 
-    fn get_selected_kakisute(&self, index: Option<usize>) -> Option<String> {
+    fn get_selected_kakisute_contetent(&self, index: Option<usize>) -> Option<String> {
         let selected_kakisute = self.kakisute_list.get(index);
         match selected_kakisute {
             Some(selected_kakisute) => {
