@@ -177,6 +177,10 @@ impl App {
                 .block(Block::default().title("Contents").borders(Borders::ALL));
             f.render_widget(paragraph, chunks[2])
         }
+
+        let help = Paragraph::new(Text::from("esc: Quit, j: Down, k: Up"))
+                .block(Block::default().title("Help").borders(Borders::ALL));
+        f.render_widget(help, chunks[3]);
     }
 
     fn get_selected_kakisute(&self, index: Option<usize>) -> Option<String> {
