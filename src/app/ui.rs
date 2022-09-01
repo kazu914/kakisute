@@ -132,6 +132,27 @@ impl App {
                         (KeyCode::Char('k'), KeyModifiers::NONE) => {
                             tui.select_previous();
                         }
+                        (KeyCode::Char('e'), KeyModifiers::NONE) => {
+                            let index = tui.selected_list_index;
+                            let selected_kakisute = &self.kakisute_list.get(index);
+                            match selected_kakisute {
+                                Some(kakisute) => {
+                                    execute!(
+                                        terminal.backend_mut(),
+                                        LeaveAlternateScreen,
+                                        DisableMouseCapture
+                                    )?;
+                                    operation::edit(&self.data_dir, kakisute.file_name());
+                                    execute!(
+                                        terminal.backend_mut(),
+                                        EnterAlternateScreen,
+                                        EnableMouseCapture
+                                    )?;
+                                    terminal.clear()?;
+                                }
+                                None => {}
+                            }
+                        }
                         _ => {}
                     },
                 }
@@ -178,8 +199,8 @@ impl App {
             f.render_widget(paragraph, chunks[2])
         }
 
-        let help = Paragraph::new(Text::from("esc: Quit, j: Down, k: Up"))
-                .block(Block::default().title("Help").borders(Borders::ALL));
+        let help = Paragraph::new(Text::from("esc: Quit, j: Down, k: Up, e: Edit"))
+            .block(Block::default().title("Help").borders(Borders::ALL));
         f.render_widget(help, chunks[3]);
     }
 
