@@ -1,4 +1,8 @@
 use crate::{kakisute_file::KakisuteFile, operation};
+use tui::{
+    layout::{Alignment, Rect},
+    widgets::Clear,
+};
 use unicode_width::UnicodeWidthStr;
 
 use super::App;
@@ -127,6 +131,7 @@ impl App {
                 match tui.mode {
                     Mode::Insert => match (code, modifiers) {
                         (KeyCode::Esc, KeyModifiers::NONE) => {
+                            tui.clear_filename();
                             tui.enter_normal_mode();
                         }
                         (KeyCode::Char(c), KeyModifiers::NONE) => {
@@ -166,7 +171,7 @@ impl App {
                             terminal.show_cursor()?;
                             return Ok(());
                         }
-                        (KeyCode::Char('i'), KeyModifiers::NONE) => {
+                        (KeyCode::Char('N'), KeyModifiers::SHIFT) => {
                             tui.enter_insert_mode();
                         }
                         (KeyCode::Char('j'), KeyModifiers::NONE) => {
@@ -222,24 +227,13 @@ impl App {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .margin(1)
-            .constraints(
-                [
-                    Constraint::Percentage(10),
-                    Constraint::Percentage(40),
-                    Constraint::Percentage(40),
-                    Constraint::Percentage(10),
-                ]
-                .as_ref(),
-            )
+            .constraints([Constraint::Min(3), Constraint::Length(3)].as_ref())
             .split(f.size());
 
-        let input = Paragraph::new(tui.new_filename.as_ref())
-            .style(match tui.mode {
-                Mode::Normal => Style::default(),
-                Mode::Insert => Style::default().fg(Color::Blue),
-            })
-            .block(Block::default().borders(Borders::ALL).title("Input"));
-        f.render_widget(input, chunks[0]);
+        let content_chunk = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
+            .split(chunks[0]);
 
         let items2 = tui
             .items
@@ -260,31 +254,47 @@ impl App {
             .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
             .highlight_symbol(">>");
         let mut state = ListState::default();
-
         state.select(tui.selected_list_index);
 
-        f.render_stateful_widget(list, chunks[1], &mut state);
+        f.render_stateful_widget(list, content_chunk[0], &mut state);
 
         let content = self.get_kakisute_contetent(tui.selected_list_index);
-
         if let Some(content) = content {
             let paragraph = Paragraph::new(Text::from(content))
                 .wrap(Wrap { trim: false })
                 .block(Block::default().title("Content").borders(Borders::ALL));
-            f.render_widget(paragraph, chunks[2])
+            f.render_widget(paragraph, content_chunk[1])
         }
 
-        let help = Paragraph::new(Text::from(
-            "esc: Quit, j: Down, k: Up, e: Edit, n: Create new",
-        ))
+        let help = Paragraph::new(Text::from(match tui.mode {
+            Mode::Normal => {
+                "esc: Quit, j: Down, k: Up, e: Edit, n: Create new, N: Create new with file name"
+            }
+
+            Mode::Insert => "esc: Enter normal mode, Enter: Open editor",
+        }))
         .block(Block::default().title("Help").borders(Borders::ALL));
-        f.render_widget(help, chunks[3]);
+        f.render_widget(help, chunks[1]);
+
         match tui.mode {
             Mode::Normal => {}
-            Mode::Insert => f.set_cursor(
-                chunks[0].x + tui.new_filename.width_cjk() as u16 + 1,
-                chunks[0].y + 1,
-            ),
+            Mode::Insert => {
+                let input = Paragraph::new(tui.new_filename.as_ref())
+                    .style(match tui.mode {
+                        Mode::Normal => Style::default(),
+                        Mode::Insert => Style::default().fg(Color::Blue).bg(Color::Black),
+                    })
+                    .block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .title("Input new file name")
+                            .title_alignment(Alignment::Center),
+                    );
+                let area = centered_rect(50, 3, f.size());
+                f.render_widget(Clear, area); //this clears out the background
+                f.render_widget(input, area);
+                f.set_cursor(area.x + tui.new_filename.width_cjk() as u16 + 1, area.y + 1)
+            }
         }
     }
 
@@ -299,4 +309,30 @@ impl App {
     fn get_kakisute(&self, index: Option<usize>) -> Option<&KakisuteFile> {
         self.kakisute_list.get(index)
     }
+}
+
+fn centered_rect(percent_x: u16, height: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Percentage(50),
+                Constraint::Length(height),
+                Constraint::Percentage(50),
+            ]
+            .as_ref(),
+        )
+        .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Percentage((100 - percent_x) / 2),
+                Constraint::Percentage(percent_x),
+                Constraint::Percentage((100 - percent_x) / 2),
+            ]
+            .as_ref(),
+        )
+        .split(popup_layout[1])[1]
 }
