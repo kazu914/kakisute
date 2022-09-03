@@ -21,4 +21,8 @@ impl App {
             kakisute_list,
         }
     }
+
+    pub fn reload(&mut self) {
+        self.kakisute_list = KakisuteList::from_dir(self.data_dir.read_dir());
+    }
 }

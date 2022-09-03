@@ -54,6 +54,17 @@ impl Tui {
             mode: Mode::Normal,
         }
     }
+
+    fn reload(&mut self, kakisute_file_list: Vec<KakisuteFile>) {
+        let index = if kakisute_file_list.is_empty() {
+            None
+        } else {
+            Some(0)
+        };
+
+        self.selected_list_index = index;
+        self.items = kakisute_file_list;
+    }
     fn enter_insert_mode(&mut self) {
         self.mode = Mode::Insert;
     }
@@ -152,6 +163,22 @@ impl App {
                                 None => {}
                             }
                         }
+                        (KeyCode::Char('n'), KeyModifiers::NONE) => {
+                            execute!(
+                                terminal.backend_mut(),
+                                LeaveAlternateScreen,
+                                DisableMouseCapture
+                            )?;
+                            self.create_kakisute(None);
+                            execute!(
+                                terminal.backend_mut(),
+                                EnterAlternateScreen,
+                                EnableMouseCapture
+                            )?;
+                            terminal.clear()?;
+                            self.reload();
+                            tui.reload(self.kakisute_list.get_list());
+                        }
                         _ => {}
                     },
                 }
@@ -198,7 +225,7 @@ impl App {
             f.render_widget(paragraph, chunks[2])
         }
 
-        let help = Paragraph::new(Text::from("esc: Quit, j: Down, k: Up, e: Edit"))
+        let help = Paragraph::new(Text::from("esc: Quit, j: Down, k: Up, e: Edit, n: Create new"))
             .block(Block::default().title("Help").borders(Borders::ALL));
         f.render_widget(help, chunks[3]);
     }
@@ -206,9 +233,7 @@ impl App {
     fn get_kakisute_contetent(&self, index: Option<usize>) -> Option<String> {
         let kakisute = self.get_kakisute(index);
         match kakisute {
-            Some(kakisute) => {
-                operation::get_content(&self.data_dir, kakisute.file_name())
-            }
+            Some(kakisute) => operation::get_content(&self.data_dir, kakisute.file_name()),
             None => None,
         }
     }
