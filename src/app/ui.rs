@@ -34,7 +34,7 @@ struct Tui {
     selected_list_index: Option<usize>,
     items: Vec<KakisuteFile>,
     mode: Mode,
-    new_filename: String,
+    new_file_name: String,
 }
 
 impl Default for Tui {
@@ -43,7 +43,7 @@ impl Default for Tui {
             selected_list_index: Some(0),
             items: vec![],
             mode: Mode::Normal,
-            new_filename: String::new(),
+            new_file_name: String::new(),
         }
     }
 }
@@ -59,7 +59,7 @@ impl Tui {
             selected_list_index: index,
             items: kakisute_file_list,
             mode: Mode::Normal,
-            new_filename: String::new(),
+            new_file_name: String::new(),
         }
     }
 
@@ -104,8 +104,8 @@ impl Tui {
             None => {}
         }
     }
-    fn clear_filename(&mut self) {
-        self.new_filename = String::new();
+    fn clear_file_name(&mut self) {
+        self.new_file_name = String::new();
     }
 }
 
@@ -131,14 +131,14 @@ impl App {
                 match tui.mode {
                     Mode::Insert => match (code, modifiers) {
                         (KeyCode::Esc, KeyModifiers::NONE) => {
-                            tui.clear_filename();
+                            tui.clear_file_name();
                             tui.enter_normal_mode();
                         }
                         (KeyCode::Char(c), KeyModifiers::NONE) => {
-                            tui.new_filename.push(c);
+                            tui.new_file_name.push(c);
                         }
                         (KeyCode::Backspace, KeyModifiers::NONE) => {
-                            tui.new_filename.pop();
+                            tui.new_file_name.pop();
                         }
                         (KeyCode::Enter, KeyModifiers::NONE) => {
                             execute!(
@@ -146,7 +146,7 @@ impl App {
                                 LeaveAlternateScreen,
                                 DisableMouseCapture
                             )?;
-                            self.create_kakisute(Some(tui.new_filename.clone()));
+                            self.create_kakisute(Some(tui.new_file_name.clone()));
                             execute!(
                                 terminal.backend_mut(),
                                 EnterAlternateScreen,
@@ -155,7 +155,7 @@ impl App {
                             terminal.clear()?;
                             self.reload();
                             tui.reload(self.kakisute_list.get_list());
-                            tui.clear_filename();
+                            tui.clear_file_name();
                         }
                         _ => {}
                     },
@@ -235,13 +235,13 @@ impl App {
             .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
             .split(chunks[0]);
 
-        let items2 = tui
+        let file_names = tui
             .items
             .iter()
             .map(|file| ListItem::new(file.file_name()))
             .collect::<Vec<ListItem>>();
 
-        let list = List::new(items2)
+        let list = List::new(file_names)
             .block(
                 Block::default()
                     .title("List")
@@ -280,7 +280,7 @@ impl App {
         match tui.mode {
             Mode::Normal => {}
             Mode::Insert => {
-                let input = Paragraph::new(tui.new_filename.as_ref())
+                let input = Paragraph::new(tui.new_file_name.as_ref())
                     .style(match tui.mode {
                         Mode::Normal => Style::default(),
                         Mode::Insert => Style::default().fg(Color::Blue).bg(Color::Black),
@@ -294,7 +294,7 @@ impl App {
                 let area = centered_rect(50, 3, f.size());
                 f.render_widget(Clear, area); //this clears out the background
                 f.render_widget(input, area);
-                f.set_cursor(area.x + tui.new_filename.width_cjk() as u16 + 1, area.y + 1)
+                f.set_cursor(area.x + tui.new_file_name.width_cjk() as u16 + 1, area.y + 1)
             }
         }
     }
