@@ -13,6 +13,7 @@ chrono = "0.4"
 shellexpand = "2.1"
 tui = "0.19"
 crossterm = "0.25"
+unicode-width = "0.1.5"
 
 [dev-dependencies]
 speculate = "0.1"

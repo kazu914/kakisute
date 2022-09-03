@@ -209,6 +209,7 @@ dependencies = [
  "shellexpand",
  "speculate",
  "tui",
+ "unicode-width",
 ]
 
 [[package]]

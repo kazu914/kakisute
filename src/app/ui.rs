@@ -1,4 +1,5 @@
 use crate::{kakisute_file::KakisuteFile, operation};
+use unicode_width::UnicodeWidthStr;
 
 use super::App;
 
@@ -14,7 +15,7 @@ use crossterm::{
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     text::Text,
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     Frame, Terminal,
@@ -29,6 +30,7 @@ struct Tui {
     selected_list_index: Option<usize>,
     items: Vec<KakisuteFile>,
     mode: Mode,
+    new_filename: String,
 }
 
 impl Default for Tui {
@@ -37,6 +39,7 @@ impl Default for Tui {
             selected_list_index: Some(0),
             items: vec![],
             mode: Mode::Normal,
+            new_filename: String::new(),
         }
     }
 }
@@ -52,6 +55,7 @@ impl Tui {
             selected_list_index: index,
             items: kakisute_file_list,
             mode: Mode::Normal,
+            new_filename: String::new(),
         }
     }
 
@@ -64,6 +68,7 @@ impl Tui {
 
         self.selected_list_index = index;
         self.items = kakisute_file_list;
+        self.mode = Mode::Normal;
     }
     fn enter_insert_mode(&mut self) {
         self.mode = Mode::Insert;
@@ -95,6 +100,9 @@ impl Tui {
             None => {}
         }
     }
+    fn clear_filename(&mut self) {
+        self.new_filename = String::new();
+    }
 }
 
 impl App {
@@ -117,11 +125,35 @@ impl App {
             }) = event::read()?
             {
                 match tui.mode {
-                    Mode::Insert => {
-                        if let (KeyCode::Esc, KeyModifiers::NONE) = (code, modifiers) {
+                    Mode::Insert => match (code, modifiers) {
+                        (KeyCode::Esc, KeyModifiers::NONE) => {
                             tui.enter_normal_mode();
                         }
-                    }
+                        (KeyCode::Char(c), KeyModifiers::NONE) => {
+                            tui.new_filename.push(c);
+                        }
+                        (KeyCode::Backspace, KeyModifiers::NONE) => {
+                            tui.new_filename.pop();
+                        }
+                        (KeyCode::Enter, KeyModifiers::NONE) => {
+                            execute!(
+                                terminal.backend_mut(),
+                                LeaveAlternateScreen,
+                                DisableMouseCapture
+                            )?;
+                            self.create_kakisute(Some(tui.new_filename.clone()));
+                            execute!(
+                                terminal.backend_mut(),
+                                EnterAlternateScreen,
+                                EnableMouseCapture
+                            )?;
+                            terminal.clear()?;
+                            self.reload();
+                            tui.reload(self.kakisute_list.get_list());
+                            tui.clear_filename();
+                        }
+                        _ => {}
+                    },
                     Mode::Normal => match (code, modifiers) {
                         (KeyCode::Esc, KeyModifiers::NONE) => {
                             disable_raw_mode()?;
@@ -201,6 +233,14 @@ impl App {
             )
             .split(f.size());
 
+        let input = Paragraph::new(tui.new_filename.as_ref())
+            .style(match tui.mode {
+                Mode::Normal => Style::default(),
+                Mode::Insert => Style::default().fg(Color::Blue),
+            })
+            .block(Block::default().borders(Borders::ALL).title("Input"));
+        f.render_widget(input, chunks[0]);
+
         let items2 = tui
             .items
             .iter()
@@ -208,7 +248,15 @@ impl App {
             .collect::<Vec<ListItem>>();
 
         let list = List::new(items2)
-            .block(Block::default().title("List").borders(Borders::ALL))
+            .block(
+                Block::default()
+                    .title("List")
+                    .borders(Borders::ALL)
+                    .border_style(match tui.mode {
+                        Mode::Normal => Style::default().fg(Color::Blue),
+                        Mode::Insert => Style::default(),
+                    }),
+            )
             .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
             .highlight_symbol(">>");
         let mut state = ListState::default();
@@ -225,9 +273,18 @@ impl App {
             f.render_widget(paragraph, chunks[2])
         }
 
-        let help = Paragraph::new(Text::from("esc: Quit, j: Down, k: Up, e: Edit, n: Create new"))
-            .block(Block::default().title("Help").borders(Borders::ALL));
+        let help = Paragraph::new(Text::from(
+            "esc: Quit, j: Down, k: Up, e: Edit, n: Create new",
+        ))
+        .block(Block::default().title("Help").borders(Borders::ALL));
         f.render_widget(help, chunks[3]);
+        match tui.mode {
+            Mode::Normal => {}
+            Mode::Insert => f.set_cursor(
+                chunks[0].x + tui.new_filename.width_cjk() as u16 + 1,
+                chunks[0].y + 1,
+            ),
+        }
     }
 
     fn get_kakisute_contetent(&self, index: Option<usize>) -> Option<String> {
