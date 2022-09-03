@@ -17,7 +17,7 @@ use tui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::Text,
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
     Frame, Terminal,
 };
 
@@ -269,6 +269,7 @@ impl App {
 
         if let Some(content) = content {
             let paragraph = Paragraph::new(Text::from(content))
+                .wrap(Wrap { trim: false })
                 .block(Block::default().title("Content").borders(Borders::ALL));
             f.render_widget(paragraph, chunks[2])
         }
