@@ -259,12 +259,13 @@ impl App {
         f.render_stateful_widget(list, content_chunk[0], &mut state);
 
         let content = self.get_kakisute_contetent(tui.selected_list_index);
-        if let Some(content) = content {
-            let paragraph = Paragraph::new(Text::from(content))
-                .wrap(Wrap { trim: false })
-                .block(Block::default().title("Content").borders(Borders::ALL));
-            f.render_widget(paragraph, content_chunk[1])
-        }
+        let paragraph = Paragraph::new(match content {
+            Some(content) => Text::from(content),
+            None => Text::from("<No file is selected>"),
+        })
+        .wrap(Wrap { trim: false })
+        .block(Block::default().title("Content").borders(Borders::ALL));
+        f.render_widget(paragraph, content_chunk[1]);
 
         let help = Paragraph::new(Text::from(match tui.mode {
             Mode::Normal => {
