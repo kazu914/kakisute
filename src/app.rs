@@ -1,3 +1,4 @@
+mod delete_service;
 mod edit_service;
 mod inspect_service;
 mod list_service;

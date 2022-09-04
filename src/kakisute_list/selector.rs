@@ -12,7 +12,7 @@ impl KakisuteList {
                 if is_latest {
                     self.get_latest()
                 } else {
-                    println!("edit expect a file name or \"--latest\" flag");
+                    println!("File name or \"--latest\" flag is required.");
                     None
                 }
             }
