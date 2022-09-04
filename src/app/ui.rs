@@ -294,7 +294,10 @@ impl App {
                 let area = centered_rect(50, 3, f.size());
                 f.render_widget(Clear, area); //this clears out the background
                 f.render_widget(input, area);
-                f.set_cursor(area.x + tui.new_file_name.width_cjk() as u16 + 1, area.y + 1)
+                f.set_cursor(
+                    area.x + tui.new_file_name.width_cjk() as u16 + 1,
+                    area.y + 1,
+                )
             }
         }
     }
