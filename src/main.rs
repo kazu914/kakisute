@@ -45,6 +45,13 @@ enum Action {
         file_name: Option<String>,
     },
 
+    /// Delete existing kakisute
+    Delete {
+        #[clap(long = "latest")]
+        is_latest: bool,
+        file_name: Option<String>,
+    },
+
     /// Start TUI mode
     Interact {},
 }
@@ -81,6 +88,13 @@ fn main() -> Result<(), error::ScrawlError> {
         } => {
             let query = kakisute_list::single_query::SingleQuery::new(is_latest, file_name);
             app.inspect(query);
+        }
+        Action::Delete {
+            is_latest,
+            file_name,
+        } => {
+            let query = kakisute_list::single_query::SingleQuery::new(is_latest, file_name);
+            app.delete(query);
         }
         Action::Interact {} => {
             app.ui().unwrap();

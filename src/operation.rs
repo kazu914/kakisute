@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, process};
 
 use crate::data_dir::DataDir;
 
@@ -20,4 +20,12 @@ pub fn show(data_dir: &DataDir, file_name: &str) {
 pub fn get_content(data_dir: &DataDir, file_name: &str) -> Option<String> {
     let file_path = data_dir.join(file_name);
     fs::read_to_string(file_path).ok()
+}
+
+pub fn delete(data_dir: &DataDir, file_name: &str) {
+    let file_path = data_dir.join(file_name);
+    fs::remove_file(file_path).unwrap_or_else(|err| {
+        eprintln!("{:?}", err);
+        process::exit(1);
+    })
 }
