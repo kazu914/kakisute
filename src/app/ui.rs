@@ -28,6 +28,7 @@ use tui::{
 enum Mode {
     Normal,
     Insert,
+    DeleteConfirm,
 }
 
 struct Tui {
@@ -79,6 +80,9 @@ impl Tui {
     }
     fn enter_normal_mode(&mut self) {
         self.mode = Mode::Normal;
+    }
+    fn enter_delete_mode(&mut self) {
+        self.mode = Mode::DeleteConfirm;
     }
     fn select_next(&mut self) {
         match self.selected_list_index {
@@ -216,6 +220,27 @@ impl App {
                             self.reload();
                             tui.reload(self.kakisute_list.get_list());
                         }
+                        (KeyCode::Char('d'), KeyModifiers::NONE) => {
+                            tui.enter_delete_mode();
+                        }
+                        _ => {}
+                    },
+                    Mode::DeleteConfirm => match (code, modifiers) {
+                        (KeyCode::Esc, KeyModifiers::NONE)
+                        | (KeyCode::Char('n'), KeyModifiers::NONE) => {
+                            tui.enter_normal_mode();
+                        }
+                        (KeyCode::Char('Y'), KeyModifiers::SHIFT) => {
+                            let kakisute = self.get_kakisute(tui.selected_list_index);
+                            match kakisute {
+                                Some(kakisute) => {
+                                    operation::delete(&self.data_dir, kakisute.file_name());
+                                }
+                                None => {}
+                            }
+                            self.reload();
+                            tui.reload(self.kakisute_list.get_list());
+                        }
                         _ => {}
                     },
                 }
@@ -248,7 +273,7 @@ impl App {
                     .borders(Borders::ALL)
                     .border_style(match tui.mode {
                         Mode::Normal => Style::default().fg(Color::Blue),
-                        Mode::Insert => Style::default(),
+                        _ => Style::default(),
                     }),
             )
             .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
@@ -269,22 +294,19 @@ impl App {
 
         let help = Paragraph::new(Text::from(match tui.mode {
             Mode::Normal => {
-                "esc: Quit, j: Down, k: Up, e: Edit, n: Create new, N: Create new with file name"
+                "esc: Quit, j: Down, k: Up, e: Edit, n: Create new, N: Create new with file name, d: Delete"
             }
 
             Mode::Insert => "esc: Enter normal mode, Enter: Open editor",
+            Mode::DeleteConfirm => "esc/n: Cancel, Y: delete",
         }))
         .block(Block::default().title("Help").borders(Borders::ALL));
         f.render_widget(help, chunks[1]);
 
         match tui.mode {
-            Mode::Normal => {}
             Mode::Insert => {
                 let input = Paragraph::new(tui.new_file_name.as_ref())
-                    .style(match tui.mode {
-                        Mode::Normal => Style::default(),
-                        Mode::Insert => Style::default().fg(Color::Blue).bg(Color::Black),
-                    })
+                    .style(Style::default().fg(Color::Blue))
                     .block(
                         Block::default()
                             .borders(Borders::ALL)
@@ -299,6 +321,20 @@ impl App {
                     area.y + 1,
                 )
             }
+            Mode::DeleteConfirm => {
+                let input = Paragraph::new("Are you sure you want to delete? (Y/n)")
+                    .style(Style::default().fg(Color::Red))
+                    .block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .title("Confirm Modal")
+                            .title_alignment(Alignment::Center),
+                    );
+                let area = centered_rect(50, 3, f.size());
+                f.render_widget(Clear, area); //this clears out the background
+                f.render_widget(input, area);
+            }
+            _ => {}
         }
     }
 
