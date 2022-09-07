@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use kakisute::{app::App, kakisute_list};
+use kakisute::{app::App, kakisute_list, ui};
 use scrawl::error;
 
 #[derive(Parser, Debug)]
@@ -97,7 +97,7 @@ fn main() -> Result<(), error::ScrawlError> {
             app.delete(query);
         }
         Action::Interact {} => {
-            app.ui().unwrap();
+            let _ = ui::run_app(&mut app);
         }
     }
     Ok(())
