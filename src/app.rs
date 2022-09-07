@@ -1,12 +1,8 @@
-mod delete_service;
-mod edit_service;
-mod inspect_service;
-mod list_service;
-mod new_service;
-mod show_service;
-
 use crate::{
-    data_dir::DataDir, kakisute_file::KakisuteFile, kakisute_list::KakisuteList, operation,
+    data_dir::DataDir,
+    kakisute_file::KakisuteFile,
+    kakisute_list::{single_query::SingleQuery, KakisuteList},
+    operation,
 };
 
 pub struct App {
@@ -60,6 +56,71 @@ impl App {
         match kakisute {
             Some(kakisute) => operation::get_content(&self.data_dir, kakisute.file_name()),
             None => None,
+        }
+    }
+
+    pub fn create_kakisute(&self, file_name: Option<String>) {
+        let kakisute_file = KakisuteFile::new(file_name);
+        operation::edit(&self.data_dir, kakisute_file.file_name());
+    }
+
+    pub fn delete(&self, query: SingleQuery) {
+        let kakisute = self.kakisute_list.single_select(query);
+
+        match kakisute {
+            Some(kakisute) => {
+                operation::delete(&self.data_dir, kakisute.file_name());
+                println!("Deleted: {}", kakisute.file_name());
+            }
+            None => {
+                println!("Can not find one matching the query");
+            }
+        }
+    }
+
+    pub fn show(&self, query: SingleQuery) {
+        let kakisute = self.kakisute_list.single_select(query);
+
+        match kakisute {
+            Some(kakisute) => {
+                operation::show(&self.data_dir, kakisute.file_name());
+            }
+            None => {
+                println!("Can not find one matching the query");
+            }
+        }
+    }
+
+    pub fn edit(&self, query: SingleQuery) {
+        let kakisute = self.kakisute_list.single_select(query);
+
+        match kakisute {
+            Some(kakisute) => {
+                operation::edit(&self.data_dir, kakisute.file_name());
+            }
+            None => {
+                println!("Can not find one matching the query");
+            }
+        }
+    }
+
+    pub fn list(&self) {
+        self.kakisute_list.print_list();
+    }
+
+    pub fn inspect(&self, query: SingleQuery) {
+        let kakisute = self.kakisute_list.single_select(query);
+
+        match kakisute {
+            Some(kakisute) => {
+                println!(
+                    "{}",
+                    self.data_dir.join(kakisute.file_name()).to_string_lossy()
+                );
+            }
+            None => {
+                println!("Can not find one matching the query");
+            }
         }
     }
 }
