@@ -5,14 +5,18 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 
-use std::{io, usize};
+use anyhow::{Ok, Result};
+use std::{
+    io::{self, Stdout},
+    usize,
+};
 
 use crossterm::{
     event::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyModifiers,
     },
-    execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    ExecutableCommand,
 };
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -34,6 +38,7 @@ struct Tui {
     items: Vec<KakisuteFile>,
     mode: Mode,
     new_file_name: String,
+    exit: bool,
 }
 
 impl Default for Tui {
@@ -43,6 +48,7 @@ impl Default for Tui {
             items: vec![],
             mode: Mode::Normal,
             new_file_name: String::new(),
+            exit: false,
         }
     }
 }
@@ -59,6 +65,7 @@ impl Tui {
             items: kakisute_file_list,
             mode: Mode::Normal,
             new_file_name: String::new(),
+            exit: false,
         }
     }
 
@@ -111,130 +118,138 @@ impl Tui {
     }
 }
 
-pub fn run_app(app: &mut App) -> Result<(), io::Error> {
+impl Drop for Tui {
+    fn drop(&mut self) {}
+}
+
+pub fn run_app(app: &mut App) -> Result<()> {
     let kakisute_list = app.get_kakisute_list();
     let mut tui = Tui::new(kakisute_list);
     enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    let stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    loop {
-        terminal.draw(|f| {
-            render(app, f, &tui);
-        })?;
-
-        if let Event::Key(KeyEvent {
-            code, modifiers, ..
-        }) = event::read()?
-        {
-            match tui.mode {
-                Mode::Insert => match (code, modifiers) {
-                    (KeyCode::Esc, KeyModifiers::NONE) => {
-                        tui.clear_file_name();
-                        tui.enter_normal_mode();
-                    }
-                    (KeyCode::Char(c), KeyModifiers::NONE) => {
-                        tui.new_file_name.push(c);
-                    }
-                    (KeyCode::Backspace, KeyModifiers::NONE) => {
-                        tui.new_file_name.pop();
-                    }
-                    (KeyCode::Enter, KeyModifiers::NONE) => {
-                        execute!(
-                            terminal.backend_mut(),
-                            LeaveAlternateScreen,
-                            DisableMouseCapture
-                        )?;
-                        app.create_kakisute(Some(tui.new_file_name.clone()));
-                        execute!(
-                            terminal.backend_mut(),
-                            EnterAlternateScreen,
-                            EnableMouseCapture
-                        )?;
-                        terminal.clear()?;
-                        app.reload();
-                        tui.reload(app.get_kakisute_list());
-                        tui.clear_file_name();
-                    }
-                    _ => {}
-                },
-                Mode::Normal => match (code, modifiers) {
-                    (KeyCode::Esc, KeyModifiers::NONE) => {
-                        disable_raw_mode()?;
-                        execute!(
-                            terminal.backend_mut(),
-                            LeaveAlternateScreen,
-                            DisableMouseCapture
-                        )?;
-
-                        terminal.show_cursor()?;
-                        return Ok(());
-                    }
-                    (KeyCode::Char('N'), KeyModifiers::SHIFT) => {
-                        tui.enter_insert_mode();
-                    }
-                    (KeyCode::Char('j'), KeyModifiers::NONE) => {
-                        tui.select_next();
-                    }
-                    (KeyCode::Char('k'), KeyModifiers::NONE) => {
-                        tui.select_previous();
-                    }
-                    (KeyCode::Char('e'), KeyModifiers::NONE) => {
-                        if let Some(index) = tui.selected_list_index {
-                            execute!(
-                                terminal.backend_mut(),
-                                LeaveAlternateScreen,
-                                DisableMouseCapture
-                            )?;
-                            app.edit_by_index(index);
-                            execute!(
-                                terminal.backend_mut(),
-                                EnterAlternateScreen,
-                                EnableMouseCapture
-                            )?;
-                            terminal.clear()?;
-                        }
-                    }
-                    (KeyCode::Char('n'), KeyModifiers::NONE) => {
-                        execute!(
-                            terminal.backend_mut(),
-                            LeaveAlternateScreen,
-                            DisableMouseCapture
-                        )?;
-                        app.create_kakisute(None);
-                        execute!(
-                            terminal.backend_mut(),
-                            EnterAlternateScreen,
-                            EnableMouseCapture
-                        )?;
-                        terminal.clear()?;
-                        app.reload();
-                        tui.reload(app.get_kakisute_list());
-                    }
-                    (KeyCode::Char('d'), KeyModifiers::NONE) => {
-                        tui.enter_delete_mode();
-                    }
-                    _ => {}
-                },
-                Mode::DeleteConfirm => match (code, modifiers) {
-                    (KeyCode::Esc, KeyModifiers::NONE)
-                    | (KeyCode::Char('n'), KeyModifiers::NONE) => {
-                        tui.enter_normal_mode();
-                    }
-                    (KeyCode::Char('Y'), KeyModifiers::SHIFT) => {
-                        if let Some(index) = tui.selected_list_index {
-                            app.delete_by_index(index);
-                            app.reload();
-                            tui.reload(app.get_kakisute_list());
-                        }
-                    }
-                    _ => {}
-                },
-            }
-        }
+    terminal
+        .backend_mut()
+        .execute(EnterAlternateScreen)?
+        .execute(EnableMouseCapture)?;
+    while !tui.exit {
+        render_loop(&mut terminal, app, &mut tui)?
     }
+    Ok(())
+}
+
+fn render_loop(
+    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    app: &mut App,
+    tui: &mut Tui,
+) -> Result<()> {
+    terminal.draw(|f| {
+        render(app, f, tui);
+    })?;
+
+    if let Event::Key(KeyEvent {
+        code, modifiers, ..
+    }) = event::read()?
+    {
+        match tui.mode {
+            Mode::Insert => match (code, modifiers) {
+                (KeyCode::Esc, KeyModifiers::NONE) => {
+                    tui.clear_file_name();
+                    tui.enter_normal_mode();
+                }
+                (KeyCode::Char(c), KeyModifiers::NONE) => {
+                    tui.new_file_name.push(c);
+                }
+                (KeyCode::Backspace, KeyModifiers::NONE) => {
+                    tui.new_file_name.pop();
+                }
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    terminal
+                        .backend_mut()
+                        .execute(LeaveAlternateScreen)?
+                        .execute(DisableMouseCapture)?;
+                    app.create_kakisute(Some(tui.new_file_name.clone()))?;
+                    terminal
+                        .backend_mut()
+                        .execute(EnterAlternateScreen)?
+                        .execute(EnableMouseCapture)?;
+                    terminal.clear()?;
+                    app.reload();
+                    tui.reload(app.get_kakisute_list());
+                    tui.clear_file_name();
+                }
+                _ => {}
+            },
+            Mode::Normal => match (code, modifiers) {
+                (KeyCode::Esc, KeyModifiers::NONE) => {
+                    disable_raw_mode()?;
+                    terminal
+                        .backend_mut()
+                        .execute(LeaveAlternateScreen)?
+                        .execute(DisableMouseCapture)?;
+                    terminal.show_cursor()?;
+                    tui.exit = true;
+                }
+                (KeyCode::Char('N'), KeyModifiers::SHIFT) => {
+                    tui.enter_insert_mode();
+                }
+                (KeyCode::Char('j'), KeyModifiers::NONE) => {
+                    tui.select_next();
+                }
+                (KeyCode::Char('k'), KeyModifiers::NONE) => {
+                    tui.select_previous();
+                }
+                (KeyCode::Char('e'), KeyModifiers::NONE) => {
+                    if let Some(index) = tui.selected_list_index {
+                        terminal
+                            .backend_mut()
+                            .execute(LeaveAlternateScreen)?
+                            .execute(DisableMouseCapture)?;
+                        app.edit_by_index(index)?;
+                        terminal
+                            .backend_mut()
+                            .execute(EnterAlternateScreen)?
+                            .execute(EnableMouseCapture)?;
+                        terminal.clear()?;
+                    }
+                }
+                (KeyCode::Char('n'), KeyModifiers::NONE) => {
+                    terminal
+                        .backend_mut()
+                        .execute(LeaveAlternateScreen)?
+                        .execute(DisableMouseCapture)?;
+                    app.create_kakisute(None)?;
+                    terminal
+                        .backend_mut()
+                        .execute(EnterAlternateScreen)?
+                        .execute(EnableMouseCapture)?;
+                    terminal.clear()?;
+                    app.reload();
+                    tui.reload(app.get_kakisute_list());
+                }
+                (KeyCode::Char('d'), KeyModifiers::NONE) => {
+                    tui.enter_delete_mode();
+                }
+                _ => {}
+            },
+            Mode::DeleteConfirm => match (code, modifiers) {
+                (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('n'), KeyModifiers::NONE) => {
+                    tui.enter_normal_mode();
+                }
+                (KeyCode::Char('Y'), KeyModifiers::SHIFT) => {
+                    if let Some(index) = tui.selected_list_index {
+                        app.delete_by_index(index)?;
+                        app.reload();
+                        tui.reload(app.get_kakisute_list());
+                    }
+                }
+                _ => {}
+            },
+        }
+    };
+    Ok(())
 }
 
 fn render<B: Backend>(app: &mut App, f: &mut Frame<B>, tui: &Tui) {
@@ -273,7 +288,7 @@ fn render<B: Backend>(app: &mut App, f: &mut Frame<B>, tui: &Tui) {
     f.render_stateful_widget(list, content_chunk[0], &mut state);
 
     let content = match tui.selected_list_index {
-        Some(index) => app.get_kakisute_contetent(index),
+        Some(index) => app.get_contetent_by_index(index).ok(),
         None => None,
     };
 

@@ -1,3 +1,7 @@
+use std::process;
+
+use anyhow::{anyhow, Ok, Result};
+
 use crate::{
     data_dir::DataDir,
     kakisute_file::KakisuteFile,
@@ -20,6 +24,12 @@ impl App {
         }
     }
 
+    pub fn create_kakisute(&self, file_name: Option<String>) -> Result<String> {
+        let kakisute = KakisuteFile::new(file_name);
+        operation::edit(&self.data_dir, kakisute.file_name())?;
+        Ok(kakisute.file_name().to_string())
+    }
+
     pub fn reload(&mut self) {
         self.kakisute_list = KakisuteList::from_dir(self.data_dir.read_dir());
     }
@@ -28,99 +38,67 @@ impl App {
         self.kakisute_list.get_list()
     }
 
-    pub fn get_kakisute(&self, index: usize) -> Option<&KakisuteFile> {
-        self.kakisute_list.get(index)
-    }
-
-    pub fn edit_by_index(&self, index: usize) {
-        let kakisute = self.get_kakisute(index);
-        match kakisute {
-            Some(kakisute) => {
-                operation::edit(&self.data_dir, kakisute.file_name());
-            }
-            None => {}
+    pub fn get_kakisute_by_index(&self, index: usize) -> Result<&KakisuteFile> {
+        let kakisute = self.kakisute_list.get(index);
+        if let Some(kakisute) = kakisute {
+            Ok(kakisute)
+        } else {
+            Err(anyhow!("Could not get the content"))
         }
     }
 
-    pub fn delete_by_index(&self, index: usize) {
-        let kakisute = self.get_kakisute(index);
-        match kakisute {
-            Some(kakisute) => {
-                operation::delete(&self.data_dir, kakisute.file_name());
-            }
-            None => {}
-        }
-    }
-    pub fn get_kakisute_contetent(&self, index: usize) -> Option<String> {
-        let kakisute = self.get_kakisute(index);
-        match kakisute {
-            Some(kakisute) => operation::get_content(&self.data_dir, kakisute.file_name()),
-            None => None,
-        }
+    pub fn edit_by_index(&self, index: usize) -> Result<&str> {
+        let kakisute = self.get_kakisute_by_index(index)?;
+        operation::edit(&self.data_dir, kakisute.file_name())?;
+        Ok(kakisute.file_name())
     }
 
-    pub fn create_kakisute(&self, file_name: Option<String>) {
-        let kakisute_file = KakisuteFile::new(file_name);
-        operation::edit(&self.data_dir, kakisute_file.file_name());
+    pub fn delete_by_index(&self, index: usize) -> Result<&str> {
+        let kakisute = self.get_kakisute_by_index(index)?;
+        operation::delete(&self.data_dir, kakisute.file_name())?;
+        Ok(kakisute.file_name())
+    }
+    pub fn get_contetent_by_index(&self, index: usize) -> Result<String> {
+        let kakisute = self.get_kakisute_by_index(index)?;
+        let content = operation::get_content(&self.data_dir, kakisute.file_name())?;
+        Ok(content)
     }
 
-    pub fn delete(&self, query: SingleQuery) {
-        let kakisute = self.kakisute_list.single_select(query);
-
-        match kakisute {
-            Some(kakisute) => {
-                operation::delete(&self.data_dir, kakisute.file_name());
-                println!("Deleted: {}", kakisute.file_name());
-            }
-            None => {
-                println!("Can not find one matching the query");
-            }
-        }
+    pub fn delete_by_single_query(&self, query: SingleQuery) -> Result<&str> {
+        let index = self.get_index_by_single_query(query);
+        self.delete_by_index(index)
     }
 
-    pub fn show(&self, query: SingleQuery) {
-        let kakisute = self.kakisute_list.single_select(query);
-
-        match kakisute {
-            Some(kakisute) => {
-                operation::show(&self.data_dir, kakisute.file_name());
-            }
-            None => {
-                println!("Can not find one matching the query");
-            }
-        }
+    pub fn get_content_by_single_query(&self, query: SingleQuery) -> Result<String> {
+        let index = self.get_index_by_single_query(query);
+        self.get_contetent_by_index(index)
     }
 
-    pub fn edit(&self, query: SingleQuery) {
-        let kakisute = self.kakisute_list.single_select(query);
-
-        match kakisute {
-            Some(kakisute) => {
-                operation::edit(&self.data_dir, kakisute.file_name());
-            }
-            None => {
-                println!("Can not find one matching the query");
-            }
-        }
+    pub fn edit_by_single_query(&self, query: SingleQuery) -> Result<&str> {
+        let index = self.get_index_by_single_query(query);
+        self.edit_by_index(index)
     }
 
-    pub fn list(&self) {
-        self.kakisute_list.print_list();
+    pub fn inspect_by_index(&self, index: usize) -> Result<String> {
+        let kakisute = self.get_kakisute_by_index(index)?;
+        Ok(self
+            .data_dir
+            .join(kakisute.file_name())
+            .to_string_lossy()
+            .to_string())
     }
 
-    pub fn inspect(&self, query: SingleQuery) {
-        let kakisute = self.kakisute_list.single_select(query);
+    pub fn inspect_by_query(&self, query: SingleQuery) -> Result<String> {
+        let index = self.get_index_by_single_query(query);
+        self.inspect_by_index(index)
+    }
 
-        match kakisute {
-            Some(kakisute) => {
-                println!(
-                    "{}",
-                    self.data_dir.join(kakisute.file_name()).to_string_lossy()
-                );
-            }
-            None => {
-                println!("Can not find one matching the query");
-            }
-        }
+    fn get_index_by_single_query(&self, query: SingleQuery) -> usize {
+        self.kakisute_list
+            .get_matching_index(query)
+            .unwrap_or_else(|| {
+                eprintln!("Can not find one matching the query");
+                process::exit(1)
+            })
     }
 }

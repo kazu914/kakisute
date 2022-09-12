@@ -1,6 +1,7 @@
+use std::io::{self, Write};
+
 use clap::{Parser, Subcommand};
 use kakisute::{app::App, kakisute_list, ui};
-use scrawl::error;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -56,45 +57,56 @@ enum Action {
     Interact {},
 }
 
-fn main() -> Result<(), error::ScrawlError> {
+fn main() -> anyhow::Result<()> {
     let cli = Args::parse();
 
     let mut app = App::new(cli.data_dir);
 
     match cli.action {
         Action::New { file_name } => {
-            app.create_kakisute(file_name);
+            let file_name = app.create_kakisute(file_name)?;
+            println!("Created: {}", file_name);
         }
         Action::List {} => {
-            app.list();
+            let list = app.get_kakisute_list();
+
+            let stdout = io::stdout();
+            let mut handle = io::BufWriter::new(stdout);
+            for file in list {
+                writeln!(handle, "{}", file.file_name()).unwrap();
+            }
         }
         Action::Edit {
             is_latest,
             file_name,
         } => {
             let query = kakisute_list::single_query::SingleQuery::new(is_latest, file_name);
-            app.edit(query);
+            let file_name = app.edit_by_single_query(query)?;
+            println!("Edited: {}", file_name);
         }
         Action::Show {
             is_latest,
             file_name,
         } => {
             let query = kakisute_list::single_query::SingleQuery::new(is_latest, file_name);
-            app.show(query);
+            let content = app.get_content_by_single_query(query)?;
+            println!("{}", content);
         }
         Action::Inspect {
             is_latest,
             file_name,
         } => {
             let query = kakisute_list::single_query::SingleQuery::new(is_latest, file_name);
-            app.inspect(query);
+            let info = app.inspect_by_query(query)?;
+            println!("{}", info);
         }
         Action::Delete {
             is_latest,
             file_name,
         } => {
             let query = kakisute_list::single_query::SingleQuery::new(is_latest, file_name);
-            app.delete(query);
+            let fil_name = app.delete_by_single_query(query)?;
+            println!("Deleted: {}", fil_name);
         }
         Action::Interact {} => {
             let _ = ui::run_app(&mut app);

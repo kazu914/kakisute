@@ -1,31 +1,23 @@
-use std::{fs, process};
+use std::fs;
+
+use anyhow::{Context, Ok, Result};
 
 use crate::data_dir::DataDir;
 
-pub fn edit(data_dir: &DataDir, file_name: &str) {
+pub fn edit(data_dir: &DataDir, file_name: &str) -> Result<()> {
     let file_path = data_dir.join(file_name);
-    scrawl::edit(file_path).unwrap();
+    scrawl::edit(file_path).with_context(|| format!("Failed to edit {}", file_name))?;
+    Ok(())
 }
 
-pub fn show(data_dir: &DataDir, file_name: &str) {
-    let content = get_content(data_dir, file_name);
-    match content {
-        Some(content) => {
-            println!("{}", content);
-        }
-        None => {}
-    }
+pub fn get_content(data_dir: &DataDir, file_name: &str) -> Result<String> {
+    let file_path = data_dir.join(file_name);
+    let content = fs::read_to_string(file_path)
+        .with_context(|| format!("Failed to get content {}", file_name))?;
+    Ok(content)
 }
 
-pub fn get_content(data_dir: &DataDir, file_name: &str) -> Option<String> {
+pub fn delete(data_dir: &DataDir, file_name: &str) -> Result<()> {
     let file_path = data_dir.join(file_name);
-    fs::read_to_string(file_path).ok()
-}
-
-pub fn delete(data_dir: &DataDir, file_name: &str) {
-    let file_path = data_dir.join(file_name);
-    fs::remove_file(file_path).unwrap_or_else(|err| {
-        eprintln!("{:?}", err);
-        process::exit(1);
-    })
+    fs::remove_file(file_path).with_context(|| format!("Failed to delete {}", file_name))
 }

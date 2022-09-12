@@ -1,8 +1,5 @@
 use crate::kakisute_file::KakisuteFile;
-use std::{
-    fs::ReadDir,
-    io::{self, Write},
-};
+use std::fs::ReadDir;
 mod selector;
 pub mod single_query;
 
@@ -35,14 +32,6 @@ impl KakisuteList {
         kakisute_list.sort();
 
         kakisute_list
-    }
-
-    pub fn print_list(&self) {
-        let stdout = io::stdout();
-        let mut handle = io::BufWriter::new(stdout);
-        for file in &self.files {
-            writeln!(handle, "{}", file.file_name()).unwrap();
-        }
     }
 
     pub fn get_list(&self) -> Vec<KakisuteFile> {
