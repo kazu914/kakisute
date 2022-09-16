@@ -116,6 +116,13 @@ impl Tui {
     fn clear_file_name(&mut self) {
         self.new_file_name = String::new();
     }
+
+    fn get_selected_kakisute_content(&self, app: &App) -> Option<String> {
+        match self.selected_list_index {
+            Some(index) => app.get_contetent_by_index(index).ok(),
+            None => None,
+        }
+    }
 }
 
 impl Drop for Tui {
@@ -146,7 +153,14 @@ fn render_loop(
     tui: &mut Tui,
 ) -> Result<()> {
     terminal.draw(|f| {
-        render(app, f, tui);
+        render(
+            f,
+            &tui.items,
+            tui.selected_list_index,
+            &tui.mode,
+            &tui.new_file_name,
+            tui.get_selected_kakisute_content(app),
+        );
     })?;
 
     if let Event::Key(KeyEvent {
@@ -252,7 +266,14 @@ fn render_loop(
     Ok(())
 }
 
-fn render<B: Backend>(app: &mut App, f: &mut Frame<B>, tui: &Tui) {
+fn render<B: Backend>(
+    f: &mut Frame<B>,
+    kakisute_list: &[KakisuteFile],
+    index: Option<usize>,
+    mode: &Mode,
+    new_file_name: &str,
+    content: Option<String>,
+) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
@@ -264,8 +285,7 @@ fn render<B: Backend>(app: &mut App, f: &mut Frame<B>, tui: &Tui) {
         .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
         .split(chunks[0]);
 
-    let file_names = tui
-        .items
+    let file_names = kakisute_list
         .iter()
         .map(|file| ListItem::new(file.file_name()))
         .collect::<Vec<ListItem>>();
@@ -275,7 +295,7 @@ fn render<B: Backend>(app: &mut App, f: &mut Frame<B>, tui: &Tui) {
             Block::default()
                 .title("List")
                 .borders(Borders::ALL)
-                .border_style(match tui.mode {
+                .border_style(match mode {
                     Mode::Normal => Style::default().fg(Color::Blue),
                     _ => Style::default(),
                 }),
@@ -283,14 +303,9 @@ fn render<B: Backend>(app: &mut App, f: &mut Frame<B>, tui: &Tui) {
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
         .highlight_symbol(">>");
     let mut state = ListState::default();
-    state.select(tui.selected_list_index);
+    state.select(index);
 
     f.render_stateful_widget(list, content_chunk[0], &mut state);
-
-    let content = match tui.selected_list_index {
-        Some(index) => app.get_contetent_by_index(index).ok(),
-        None => None,
-    };
 
     let paragraph = Paragraph::new(match content {
         Some(content) => Text::from(content),
@@ -300,7 +315,7 @@ fn render<B: Backend>(app: &mut App, f: &mut Frame<B>, tui: &Tui) {
     .block(Block::default().title("Content").borders(Borders::ALL));
     f.render_widget(paragraph, content_chunk[1]);
 
-    let help = Paragraph::new(Text::from(match tui.mode {
+    let help = Paragraph::new(Text::from(match mode {
             Mode::Normal => {
                 "esc: Quit, j: Down, k: Up, e: Edit, n: Create new, N: Create new with file name, d: Delete"
             }
@@ -311,9 +326,9 @@ fn render<B: Backend>(app: &mut App, f: &mut Frame<B>, tui: &Tui) {
         .block(Block::default().title("Help").borders(Borders::ALL));
     f.render_widget(help, chunks[1]);
 
-    match tui.mode {
+    match mode {
         Mode::Insert => {
-            let input = Paragraph::new(tui.new_file_name.as_ref())
+            let input = Paragraph::new(new_file_name)
                 .style(Style::default().fg(Color::Blue))
                 .block(
                     Block::default()
@@ -324,10 +339,7 @@ fn render<B: Backend>(app: &mut App, f: &mut Frame<B>, tui: &Tui) {
             let area = centered_rect(50, 3, f.size());
             f.render_widget(Clear, area); //this clears out the background
             f.render_widget(input, area);
-            f.set_cursor(
-                area.x + tui.new_file_name.width_cjk() as u16 + 1,
-                area.y + 1,
-            )
+            f.set_cursor(area.x + new_file_name.width_cjk() as u16 + 1, area.y + 1)
         }
         Mode::DeleteConfirm => {
             let input = Paragraph::new("Are you sure you want to delete? (Y/n)")
