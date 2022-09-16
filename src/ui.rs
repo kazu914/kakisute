@@ -153,14 +153,7 @@ fn render_loop(
     tui: &mut Tui,
 ) -> Result<()> {
     terminal.draw(|f| {
-        render(
-            f,
-            &tui.items,
-            tui.selected_list_index,
-            &tui.mode,
-            &tui.new_file_name,
-            tui.get_selected_kakisute_content(app),
-        );
+        render(f, DisplayData::new(app, tui));
     })?;
 
     if let Event::Key(KeyEvent {
@@ -266,14 +259,27 @@ fn render_loop(
     Ok(())
 }
 
-fn render<B: Backend>(
-    f: &mut Frame<B>,
-    kakisute_list: &[KakisuteFile],
+struct DisplayData<'a> {
+    kakisute_list: &'a [KakisuteFile],
     index: Option<usize>,
-    mode: &Mode,
-    new_file_name: &str,
+    mode: &'a Mode,
+    new_file_name: &'a str,
     content: Option<String>,
-) {
+}
+
+impl<'a> DisplayData<'a> {
+    fn new(app: &App, tui: &'a Tui) -> Self {
+        Self {
+            kakisute_list: &tui.items,
+            index: tui.selected_list_index,
+            mode: &tui.mode,
+            new_file_name: &tui.new_file_name,
+            content: tui.get_selected_kakisute_content(app),
+        }
+    }
+}
+
+fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
@@ -285,7 +291,8 @@ fn render<B: Backend>(
         .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
         .split(chunks[0]);
 
-    let file_names = kakisute_list
+    let file_names = display_data
+        .kakisute_list
         .iter()
         .map(|file| ListItem::new(file.file_name()))
         .collect::<Vec<ListItem>>();
@@ -295,7 +302,7 @@ fn render<B: Backend>(
             Block::default()
                 .title("List")
                 .borders(Borders::ALL)
-                .border_style(match mode {
+                .border_style(match display_data.mode {
                     Mode::Normal => Style::default().fg(Color::Blue),
                     _ => Style::default(),
                 }),
@@ -303,11 +310,11 @@ fn render<B: Backend>(
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
         .highlight_symbol(">>");
     let mut state = ListState::default();
-    state.select(index);
+    state.select(display_data.index);
 
     f.render_stateful_widget(list, content_chunk[0], &mut state);
 
-    let paragraph = Paragraph::new(match content {
+    let paragraph = Paragraph::new(match display_data.content {
         Some(content) => Text::from(content),
         None => Text::from("<No file is selected>"),
     })
@@ -315,7 +322,7 @@ fn render<B: Backend>(
     .block(Block::default().title("Content").borders(Borders::ALL));
     f.render_widget(paragraph, content_chunk[1]);
 
-    let help = Paragraph::new(Text::from(match mode {
+    let help = Paragraph::new(Text::from(match display_data.mode {
             Mode::Normal => {
                 "esc: Quit, j: Down, k: Up, e: Edit, n: Create new, N: Create new with file name, d: Delete"
             }
@@ -326,9 +333,9 @@ fn render<B: Backend>(
         .block(Block::default().title("Help").borders(Borders::ALL));
     f.render_widget(help, chunks[1]);
 
-    match mode {
+    match display_data.mode {
         Mode::Insert => {
-            let input = Paragraph::new(new_file_name)
+            let input = Paragraph::new(display_data.new_file_name)
                 .style(Style::default().fg(Color::Blue))
                 .block(
                     Block::default()
@@ -339,7 +346,10 @@ fn render<B: Backend>(
             let area = centered_rect(50, 3, f.size());
             f.render_widget(Clear, area); //this clears out the background
             f.render_widget(input, area);
-            f.set_cursor(area.x + new_file_name.width_cjk() as u16 + 1, area.y + 1)
+            f.set_cursor(
+                area.x + display_data.new_file_name.width_cjk() as u16 + 1,
+                area.y + 1,
+            )
         }
         Mode::DeleteConfirm => {
             let input = Paragraph::new("Are you sure you want to delete? (Y/n)")
