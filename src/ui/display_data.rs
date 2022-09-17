@@ -87,3 +87,38 @@ impl<T> BlockData<T> {
         }
     }
 }
+
+#[cfg(test)]
+use speculate::speculate;
+
+#[cfg(test)]
+speculate! {
+    describe "create_help" {
+        it "returns Normal help when Normal mode" {
+            let res = DisplayData::create_help(&Mode::Normal);
+            assert_eq!(res.body, HELP_NORMAL_BODY)
+        }
+
+        it "returns Insert help when Insert mode" {
+            let res = DisplayData::create_help(&Mode::Insert);
+            assert_eq!(res.body, HELP_INSERT_BODY)
+        }
+
+        it "returns Delete help when Delete mode" {
+            let res = DisplayData::create_help(&Mode::DeleteConfirm);
+            assert_eq!(res.body, HELP_DELETE_BODY)
+        }
+    }
+
+    describe "create_content" {
+        it "return conetent when exist" {
+            let res = DisplayData::create_content(Some("content".to_string()));
+            assert_eq!(res.body, "content")
+        }
+
+        it "return empty message when not exist" {
+            let res = DisplayData::create_content(None);
+            assert_eq!(res.body, NO_FILE_BODY)
+        }
+    }
+}

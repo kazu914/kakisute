@@ -1,6 +1,7 @@
 use crate::app::App;
 use crate::kakisute_file::KakisuteFile;
 
+#[derive(Eq, PartialEq, Debug)]
 pub enum Mode {
     Normal,
     Insert,
@@ -95,6 +96,123 @@ impl Tui {
         match self.selected_list_index {
             Some(index) => app.get_contetent_by_index(index).ok(),
             None => None,
+        }
+    }
+}
+
+#[cfg(test)]
+use speculate::speculate;
+
+#[cfg(test)]
+speculate! {
+    describe "empty tui" {
+        before {
+            let kakisute_file_list: Vec<KakisuteFile> = vec![];
+            let tui = Tui::new(kakisute_file_list);
+        }
+
+        it "index should be None" {
+            assert_eq!(tui.selected_list_index, None)
+        }
+
+        it "should start with empty items" {
+            assert_eq!(tui.items.len(), 0)
+        }
+    }
+
+
+    describe "tui with multiple kakisute" {
+        before {
+            let kakisute_file_list: Vec<KakisuteFile> = vec![
+                KakisuteFile::new(Some("file1".to_string())),
+                KakisuteFile::new(Some("file2".to_string())),
+                KakisuteFile::new(Some("file3".to_string())),
+            ];
+            let tui = Tui::new(kakisute_file_list);
+        }
+
+        it "index should be Some(0)" {
+            assert_eq!(tui.selected_list_index, Some(0))
+        }
+
+        it "should start with normal mode" {
+            assert_eq!(tui.mode, Mode::Normal)
+        }
+
+        it "should start with given items" {
+            assert_eq!(tui.items.len(), 3);
+            assert!(tui.items[0].file_name().contains("file1"));
+            assert!(tui.items[1].file_name().contains("file2"));
+            assert!(tui.items[2].file_name().contains("file3"));
+        }
+
+        it "should start with empty file name" {
+            assert_eq!(tui.new_file_name, "")
+        }
+
+        it "should start with exit false" {
+            assert!(!tui.exit)
+        }
+    }
+
+    describe "tui mode function" {
+        before {
+            let kakisute_file_list: Vec<KakisuteFile> = vec![
+                KakisuteFile::new(Some("file1".to_string())),
+                KakisuteFile::new(Some("file2".to_string())),
+                KakisuteFile::new(Some("file3".to_string())),
+            ];
+            let mut tui = Tui::new(kakisute_file_list);
+        }
+
+        it "enter_insert_mode should make mode insert" {
+            tui.enter_insert_mode();
+            assert_eq!(tui.mode, Mode::Insert)
+        }
+
+        it "enter_normal_mode should make mode insert" {
+            tui.enter_insert_mode();
+            tui.enter_normal_mode();
+            assert_eq!(tui.mode, Mode::Normal)
+        }
+
+        it "enter_delete_mode should make mode delete" {
+            tui.enter_delete_mode();
+            assert_eq!(tui.mode, Mode::DeleteConfirm)
+        }
+    }
+
+    describe "index function" {
+        before {
+            let kakisute_file_list: Vec<KakisuteFile> = vec![
+                KakisuteFile::new(Some("file1".to_string())),
+                KakisuteFile::new(Some("file2".to_string())),
+                KakisuteFile::new(Some("file3".to_string())),
+            ];
+            let mut tui = Tui::new(kakisute_file_list);
+        }
+
+        it "select_next shold increment index" {
+            tui.select_next();
+            assert_eq!(tui.selected_list_index,Some(1))
+        }
+
+        it "select_next shold return 0 when index was max" {
+            tui.select_next();
+            tui.select_next();
+            tui.select_next();
+            assert_eq!(tui.selected_list_index,Some(0))
+        }
+
+        it "select_previous shold return max when index was 0" {
+            tui.select_previous();
+            assert_eq!(tui.selected_list_index,Some(2))
+        }
+
+        it "select_previous shold decrease index" {
+            tui.select_previous();
+            tui.select_previous();
+            assert_eq!(tui.selected_list_index,Some(1))
         }
     }
 }
