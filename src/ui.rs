@@ -260,38 +260,64 @@ fn render_loop(
 }
 
 struct DisplayData<'a> {
-    kakisute_list: &'a [KakisuteFile],
     index: Option<usize>,
     mode: &'a Mode,
-    new_file_name: &'a str,
-    content: String,
-    help: String,
+    kakisute_list: BlockData<&'a [KakisuteFile]>,
+    content: BlockData<String>,
+    new_file_name_modal: BlockData<&'a str>,
+    help: BlockData<String>,
+    delete_modal: BlockData<String>,
 }
 
 impl<'a> DisplayData<'a> {
     fn new(app: &App, tui: &'a Tui) -> Self {
+        let kakisute_list = BlockData::new(tui.items.as_ref(), " List");
+
         let kakisute_content = tui.get_selected_kakisute_content(app);
-        let content = match kakisute_content {
+        let content_body = match kakisute_content {
             Some(kakisute_content) => kakisute_content,
             None => "<No file is selected>".to_string(),
         };
+        let content = BlockData::new(content_body, "Content");
 
-        let help = match tui.mode {
+        let new_file_name = BlockData::new(tui.new_file_name.as_str(), "Input new file name");
+
+        let help_body = match tui.mode {
             Mode::Normal => {
                 "esc: Quit, j: Down, k: Up, e: Edit, n: Create new, N: Create new with file name, d: Delete"
             }
-
             Mode::Insert => "esc: Enter normal mode, Enter: Open editor",
             Mode::DeleteConfirm => "esc/n: Cancel, Y: delete",
         }.to_string();
+        let help = BlockData::new(help_body, "Help");
+
+        let delete_modal = BlockData::new(
+            "Are you sure you want to delete? (Y/n)".to_string(),
+            "Confirm Modal",
+        );
 
         Self {
-            kakisute_list: &tui.items,
             index: tui.selected_list_index,
             mode: &tui.mode,
-            new_file_name: &tui.new_file_name,
+            kakisute_list,
             content,
+            new_file_name_modal: new_file_name,
             help,
+            delete_modal,
+        }
+    }
+}
+
+struct BlockData<T> {
+    body: T,
+    title: String,
+}
+
+impl<T> BlockData<T> {
+    fn new(body: T, title: &str) -> Self {
+        Self {
+            body,
+            title: title.to_string(),
         }
     }
 }
@@ -310,6 +336,7 @@ fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
 
     let file_names = display_data
         .kakisute_list
+        .body
         .iter()
         .map(|file| ListItem::new(file.file_name()))
         .collect::<Vec<ListItem>>();
@@ -317,7 +344,7 @@ fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
     let list = List::new(file_names)
         .block(
             Block::default()
-                .title("List")
+                .title(display_data.kakisute_list.title)
                 .borders(Borders::ALL)
                 .border_style(match display_data.mode {
                     Mode::Normal => Style::default().fg(Color::Blue),
@@ -331,40 +358,47 @@ fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
 
     f.render_stateful_widget(list, content_chunk[0], &mut state);
 
-    let paragraph = Paragraph::new(Text::from(display_data.content))
+    let paragraph = Paragraph::new(Text::from(display_data.content.body))
         .wrap(Wrap { trim: false })
-        .block(Block::default().title("Content").borders(Borders::ALL));
+        .block(
+            Block::default()
+                .title(display_data.content.title)
+                .borders(Borders::ALL),
+        );
     f.render_widget(paragraph, content_chunk[1]);
 
-    let help = Paragraph::new(Text::from(display_data.help))
-        .block(Block::default().title("Help").borders(Borders::ALL));
+    let help = Paragraph::new(Text::from(display_data.help.body)).block(
+        Block::default()
+            .title(display_data.help.title)
+            .borders(Borders::ALL),
+    );
     f.render_widget(help, chunks[1]);
 
     match display_data.mode {
         Mode::Insert => {
-            let input = Paragraph::new(display_data.new_file_name)
+            let input = Paragraph::new(display_data.new_file_name_modal.body)
                 .style(Style::default().fg(Color::Blue))
                 .block(
                     Block::default()
                         .borders(Borders::ALL)
-                        .title("Input new file name")
+                        .title(display_data.new_file_name_modal.title)
                         .title_alignment(Alignment::Center),
                 );
             let area = centered_rect(50, 3, f.size());
             f.render_widget(Clear, area); //this clears out the background
             f.render_widget(input, area);
             f.set_cursor(
-                area.x + display_data.new_file_name.width_cjk() as u16 + 1,
+                area.x + display_data.new_file_name_modal.body.width_cjk() as u16 + 1,
                 area.y + 1,
             )
         }
         Mode::DeleteConfirm => {
-            let input = Paragraph::new("Are you sure you want to delete? (Y/n)")
+            let input = Paragraph::new(display_data.delete_modal.body)
                 .style(Style::default().fg(Color::Red))
                 .block(
                     Block::default()
                         .borders(Borders::ALL)
-                        .title("Confirm Modal")
+                        .title(display_data.delete_modal.title)
                         .title_alignment(Alignment::Center),
                 );
             let area = centered_rect(50, 3, f.size());
