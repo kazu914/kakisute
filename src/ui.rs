@@ -265,6 +265,7 @@ struct DisplayData<'a> {
     mode: &'a Mode,
     new_file_name: &'a str,
     content: String,
+    help: String,
 }
 
 impl<'a> DisplayData<'a> {
@@ -274,12 +275,23 @@ impl<'a> DisplayData<'a> {
             Some(kakisute_content) => kakisute_content,
             None => "<No file is selected>".to_string(),
         };
+
+        let help = match tui.mode {
+            Mode::Normal => {
+                "esc: Quit, j: Down, k: Up, e: Edit, n: Create new, N: Create new with file name, d: Delete"
+            }
+
+            Mode::Insert => "esc: Enter normal mode, Enter: Open editor",
+            Mode::DeleteConfirm => "esc/n: Cancel, Y: delete",
+        }.to_string();
+
         Self {
             kakisute_list: &tui.items,
             index: tui.selected_list_index,
             mode: &tui.mode,
             new_file_name: &tui.new_file_name,
             content,
+            help,
         }
     }
 }
@@ -324,14 +336,7 @@ fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
         .block(Block::default().title("Content").borders(Borders::ALL));
     f.render_widget(paragraph, content_chunk[1]);
 
-    let help = Paragraph::new(Text::from(match display_data.mode {
-            Mode::Normal => {
-                "esc: Quit, j: Down, k: Up, e: Edit, n: Create new, N: Create new with file name, d: Delete"
-            }
-
-            Mode::Insert => "esc: Enter normal mode, Enter: Open editor",
-            Mode::DeleteConfirm => "esc/n: Cancel, Y: delete",
-        }))
+    let help = Paragraph::new(Text::from(display_data.help))
         .block(Block::default().title("Help").borders(Borders::ALL));
     f.render_widget(help, chunks[1]);
 
