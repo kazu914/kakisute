@@ -3,6 +3,19 @@ use crate::kakisute_file::KakisuteFile;
 use crate::ui::tui_app::Mode;
 use crate::ui::tui_app::Tui;
 
+const DELETE_MODAL_BODY: &str = "Are you sure you want to delete? (Y/n)";
+const DELETE_MODAL_TITLE: &str = "Confirm Modal";
+const KAKISUTE_LIST_TITLE: &str = "List";
+const NO_FILE_BODY: &str = "<No file is selected>";
+const CONTENT_TITLE: &str = "Content";
+const NEW_FILE_NAME_MODAL_TITLE: &str = "Input new file name";
+const HELP_NORMAL_BODY: &str =
+    "esc: Quit, j: Down, k: Up, e: Edit, n: Create new, N: Create new with file name, d: Delete";
+
+const HELP_INSERT_BODY: &str = "esc: Enter normal mode, Enter: Open editor";
+const HELP_DELETE_BODY: &str = "esc/n: Cancel, Y: delete";
+const HELP_TITLE: &str = "Help";
+
 pub struct DisplayData<'a> {
     pub index: Option<usize>,
     pub mode: &'a Mode,
@@ -10,12 +23,12 @@ pub struct DisplayData<'a> {
     pub content: BlockData<String>,
     pub new_file_name_modal: BlockData<&'a str>,
     pub help: BlockData<String>,
-    pub delete_modal: BlockData<String>,
+    pub delete_modal: BlockData<&'a str>,
 }
 
 impl<'a> DisplayData<'a> {
     pub fn new(app: &App, tui: &'a Tui) -> Self {
-        let kakisute_list = BlockData::new(tui.items.as_ref(), " List");
+        let kakisute_list = BlockData::new(tui.items.as_ref(), KAKISUTE_LIST_TITLE);
 
         let kakisute_content = tui.get_selected_kakisute_content(app);
 
@@ -25,10 +38,7 @@ impl<'a> DisplayData<'a> {
 
         let help = DisplayData::create_help(&tui.mode);
 
-        let delete_modal = BlockData::new(
-            "Are you sure you want to delete? (Y/n)".to_string(),
-            "Confirm Modal",
-        );
+        let delete_modal = BlockData::new(DELETE_MODAL_BODY, DELETE_MODAL_TITLE);
 
         Self {
             index: tui.selected_list_index,
@@ -44,24 +54,23 @@ impl<'a> DisplayData<'a> {
     fn create_content(kakisute_content: Option<String>) -> BlockData<String> {
         let content_body = match kakisute_content {
             Some(kakisute_content) => kakisute_content,
-            None => "<No file is selected>".to_string(),
+            None => NO_FILE_BODY.to_string(),
         };
-        BlockData::new(content_body, "Content")
+        BlockData::new(content_body, CONTENT_TITLE)
     }
 
     fn create_new_file_name_modal(new_file_name: &'a str) -> BlockData<&'a str> {
-        BlockData::new(new_file_name, "Input new file name")
+        BlockData::new(new_file_name, NEW_FILE_NAME_MODAL_TITLE)
     }
 
     fn create_help(mode: &Mode) -> BlockData<String> {
         let help_body = match mode {
-            Mode::Normal => {
-                "esc: Quit, j: Down, k: Up, e: Edit, n: Create new, N: Create new with file name, d: Delete"
-            }
-            Mode::Insert => "esc: Enter normal mode, Enter: Open editor",
-            Mode::DeleteConfirm => "esc/n: Cancel, Y: delete",
-        }.to_string();
-        BlockData::new(help_body, "Help")
+            Mode::Normal => HELP_NORMAL_BODY,
+            Mode::Insert => HELP_INSERT_BODY,
+            Mode::DeleteConfirm => HELP_DELETE_BODY,
+        }
+        .to_string();
+        BlockData::new(help_body, HELP_TITLE)
     }
 }
 
