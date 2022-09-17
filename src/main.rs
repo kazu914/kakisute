@@ -109,7 +109,7 @@ fn main() -> anyhow::Result<()> {
             println!("Deleted: {}", fil_name);
         }
         Action::Interact {} => {
-            let _ = ui::run_app(&mut app);
+            let _ = ui::index::run_app(&mut app);
         }
     }
     Ok(())
