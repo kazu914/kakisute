@@ -264,17 +264,22 @@ struct DisplayData<'a> {
     index: Option<usize>,
     mode: &'a Mode,
     new_file_name: &'a str,
-    content: Option<String>,
+    content: String,
 }
 
 impl<'a> DisplayData<'a> {
     fn new(app: &App, tui: &'a Tui) -> Self {
+        let kakisute_content = tui.get_selected_kakisute_content(app);
+        let content = match kakisute_content {
+            Some(kakisute_content) => kakisute_content,
+            None => "<No file is selected>".to_string(),
+        };
         Self {
             kakisute_list: &tui.items,
             index: tui.selected_list_index,
             mode: &tui.mode,
             new_file_name: &tui.new_file_name,
-            content: tui.get_selected_kakisute_content(app),
+            content,
         }
     }
 }
@@ -314,12 +319,9 @@ fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
 
     f.render_stateful_widget(list, content_chunk[0], &mut state);
 
-    let paragraph = Paragraph::new(match display_data.content {
-        Some(content) => Text::from(content),
-        None => Text::from("<No file is selected>"),
-    })
-    .wrap(Wrap { trim: false })
-    .block(Block::default().title("Content").borders(Borders::ALL));
+    let paragraph = Paragraph::new(Text::from(display_data.content))
+        .wrap(Wrap { trim: false })
+        .block(Block::default().title("Content").borders(Borders::ALL));
     f.render_widget(paragraph, content_chunk[1]);
 
     let help = Paragraph::new(Text::from(match display_data.mode {
