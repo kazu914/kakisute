@@ -274,22 +274,12 @@ impl<'a> DisplayData<'a> {
         let kakisute_list = BlockData::new(tui.items.as_ref(), " List");
 
         let kakisute_content = tui.get_selected_kakisute_content(app);
-        let content_body = match kakisute_content {
-            Some(kakisute_content) => kakisute_content,
-            None => "<No file is selected>".to_string(),
-        };
-        let content = BlockData::new(content_body, "Content");
 
-        let new_file_name = BlockData::new(tui.new_file_name.as_str(), "Input new file name");
+        let content = DisplayData::create_content(kakisute_content);
 
-        let help_body = match tui.mode {
-            Mode::Normal => {
-                "esc: Quit, j: Down, k: Up, e: Edit, n: Create new, N: Create new with file name, d: Delete"
-            }
-            Mode::Insert => "esc: Enter normal mode, Enter: Open editor",
-            Mode::DeleteConfirm => "esc/n: Cancel, Y: delete",
-        }.to_string();
-        let help = BlockData::new(help_body, "Help");
+        let new_file_name = DisplayData::create_new_file_name_modal(tui.new_file_name.as_str());
+
+        let help = DisplayData::create_help(&tui.mode);
 
         let delete_modal = BlockData::new(
             "Are you sure you want to delete? (Y/n)".to_string(),
@@ -305,6 +295,29 @@ impl<'a> DisplayData<'a> {
             help,
             delete_modal,
         }
+    }
+
+    fn create_content(kakisute_content: Option<String>) -> BlockData<String> {
+        let content_body = match kakisute_content {
+            Some(kakisute_content) => kakisute_content,
+            None => "<No file is selected>".to_string(),
+        };
+        BlockData::new(content_body, "Content")
+    }
+
+    fn create_new_file_name_modal(new_file_name: &'a str) -> BlockData<&'a str> {
+        BlockData::new(new_file_name, "Input new file name")
+    }
+
+    fn create_help(mode: &Mode) -> BlockData<String> {
+        let help_body = match mode {
+            Mode::Normal => {
+                "esc: Quit, j: Down, k: Up, e: Edit, n: Create new, N: Create new with file name, d: Delete"
+            }
+            Mode::Insert => "esc: Enter normal mode, Enter: Open editor",
+            Mode::DeleteConfirm => "esc/n: Cancel, Y: delete",
+        }.to_string();
+        BlockData::new(help_body, "Help")
     }
 }
 
