@@ -1,5 +1,6 @@
 use crate::app::App;
 use crate::kakisute_file::KakisuteFile;
+use anyhow::{Context, Ok, Result};
 
 #[derive(Eq, PartialEq, Debug)]
 pub enum Mode {
@@ -98,6 +99,24 @@ impl Tui {
             None => None,
         }
     }
+
+    pub fn edit_kakisute(&self, app: &App) -> Result<()> {
+        let index = self
+            .selected_list_index
+            .context("Received edit without selecting kakisute index")?;
+        app.edit_by_index(index)?;
+        Ok(())
+    }
+
+    pub fn create_new_kakisute_with_file_name(&self, app: &App) -> Result<()> {
+        app.create_kakisute(Some(self.new_file_name.clone()))?;
+        Ok(())
+    }
+
+    pub fn create_new_kakisute(&self, app: &App) -> Result<()> {
+        app.create_kakisute(None)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -117,6 +136,13 @@ speculate! {
 
         it "should start with empty items" {
             assert_eq!(tui.items.len(), 0)
+        }
+
+        it "return error if edit is called" {
+            let app = App::new(None);
+            let res = tui.edit_kakisute(&app).is_err();
+            assert!(res)
+
         }
     }
 

@@ -76,7 +76,7 @@ fn render_loop(
                         .backend_mut()
                         .execute(LeaveAlternateScreen)?
                         .execute(DisableMouseCapture)?;
-                    app.create_kakisute(Some(tui.new_file_name.clone()))?;
+                    tui.create_new_kakisute_with_file_name(app)?;
                     terminal
                         .backend_mut()
                         .execute(EnterAlternateScreen)?
@@ -108,12 +108,12 @@ fn render_loop(
                     tui.select_previous();
                 }
                 (KeyCode::Char('e'), KeyModifiers::NONE) => {
-                    if let Some(index) = tui.selected_list_index {
+                    if tui.selected_list_index.is_some() {
                         terminal
                             .backend_mut()
                             .execute(LeaveAlternateScreen)?
                             .execute(DisableMouseCapture)?;
-                        app.edit_by_index(index)?;
+                        tui.edit_kakisute(app)?;
                         terminal
                             .backend_mut()
                             .execute(EnterAlternateScreen)?
@@ -126,7 +126,7 @@ fn render_loop(
                         .backend_mut()
                         .execute(LeaveAlternateScreen)?
                         .execute(DisableMouseCapture)?;
-                    app.create_kakisute(None)?;
+                    tui.create_new_kakisute(app)?;
                     terminal
                         .backend_mut()
                         .execute(EnterAlternateScreen)?
