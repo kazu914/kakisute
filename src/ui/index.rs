@@ -89,7 +89,7 @@ fn render_loop(
                 _ => {}
             },
             Mode::Normal => match (code, modifiers) {
-                (KeyCode::Esc, KeyModifiers::NONE) => {
+                (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
                     disable_raw_mode()?;
                     terminal
                         .backend_mut()

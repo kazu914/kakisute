@@ -10,7 +10,7 @@ const NO_FILE_BODY: &str = "<No file is selected>";
 const CONTENT_TITLE: &str = "Content";
 const NEW_FILE_NAME_MODAL_TITLE: &str = "Input new file name";
 const HELP_NORMAL_BODY: &str =
-    "esc: Quit, j: Down, k: Up, e: Edit, n: Create new, N: Create new with file name, d: Delete";
+    "esc/q: Quit, j: Down, k: Up, e: Edit, n: Create new, N: Create new with file name, d: Delete";
 
 const HELP_INSERT_BODY: &str = "esc: Enter normal mode, Enter: Open editor";
 const HELP_DELETE_BODY: &str = "esc/n: Cancel, Y: delete";
