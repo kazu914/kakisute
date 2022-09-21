@@ -1,7 +1,10 @@
 use std::io::{self, Write};
 
 use clap::{Parser, Subcommand};
-use kakisute::{app::App, kakisute_list, ui};
+use kakisute::{
+    app::{App, AppTrait},
+    kakisute_list, ui,
+};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

@@ -1,4 +1,3 @@
-use crate::app::App;
 use crate::kakisute_file::KakisuteFile;
 use crate::ui::tui_app::Mode;
 use crate::ui::tui_app::Tui;
@@ -27,10 +26,10 @@ pub struct DisplayData<'a> {
 }
 
 impl<'a> DisplayData<'a> {
-    pub fn new(app: &App, tui: &'a Tui) -> Self {
+    pub fn new(tui: &'a Tui) -> Self {
         let kakisute_list = BlockData::new(tui.items.as_ref(), KAKISUTE_LIST_TITLE);
 
-        let kakisute_content = tui.get_selected_kakisute_content(app);
+        let kakisute_content = tui.get_selected_kakisute_content();
 
         let content = DisplayData::create_content(kakisute_content);
 

@@ -1,4 +1,4 @@
-use crate::app::App;
+use crate::app::AppTrait;
 use crate::kakisute_file::KakisuteFile;
 use anyhow::{Context, Ok, Result};
 
@@ -9,28 +9,18 @@ pub enum Mode {
     DeleteConfirm,
 }
 
-pub struct Tui {
+pub struct Tui<'a> {
     pub selected_list_index: Option<usize>,
     pub items: Vec<KakisuteFile>,
     pub mode: Mode,
     pub new_file_name: String,
     pub exit: bool,
+    pub app: &'a mut dyn AppTrait,
 }
 
-impl Default for Tui {
-    fn default() -> Self {
-        Tui {
-            selected_list_index: Some(0),
-            items: vec![],
-            mode: Mode::Normal,
-            new_file_name: String::new(),
-            exit: false,
-        }
-    }
-}
-
-impl Tui {
-    pub fn new(kakisute_file_list: Vec<KakisuteFile>) -> Self {
+impl<'a> Tui<'a> {
+    pub fn new(app: &'a mut dyn AppTrait) -> Self {
+        let kakisute_file_list = app.get_kakisute_list();
         let index = if kakisute_file_list.is_empty() {
             None
         } else {
@@ -42,10 +32,13 @@ impl Tui {
             mode: Mode::Normal,
             new_file_name: String::new(),
             exit: false,
+            app,
         }
     }
 
-    pub fn reload(&mut self, kakisute_file_list: Vec<KakisuteFile>) {
+    pub fn reload(&mut self) {
+        self.app.reload();
+        let kakisute_file_list = self.app.get_kakisute_list();
         let index = if kakisute_file_list.is_empty() {
             None
         } else {
@@ -93,41 +86,86 @@ impl Tui {
         self.new_file_name = String::new();
     }
 
-    pub fn get_selected_kakisute_content(&self, app: &App) -> Option<String> {
+    pub fn get_selected_kakisute_content(&self) -> Option<String> {
         match self.selected_list_index {
-            Some(index) => app.get_contetent_by_index(index).ok(),
+            Some(index) => self.app.get_contetent_by_index(index).ok(),
             None => None,
         }
     }
 
-    pub fn edit_kakisute(&self, app: &App) -> Result<()> {
+    pub fn edit_kakisute(&self) -> Result<()> {
         let index = self
             .selected_list_index
             .context("Received edit without selecting kakisute index")?;
-        app.edit_by_index(index)?;
+        self.app.edit_by_index(index)?;
         Ok(())
     }
 
-    pub fn create_new_kakisute_with_file_name(&self, app: &App) -> Result<()> {
-        app.create_kakisute(Some(self.new_file_name.clone()))?;
+    pub fn create_new_kakisute_with_file_name(&self) -> Result<()> {
+        self.app.create_kakisute(Some(self.new_file_name.clone()))?;
         Ok(())
     }
 
-    pub fn create_new_kakisute(&self, app: &App) -> Result<()> {
-        app.create_kakisute(None)?;
+    pub fn create_new_kakisute(&self) -> Result<()> {
+        self.app.create_kakisute(None)?;
+        Ok(())
+    }
+
+    pub fn delete_kakisute(&self) -> Result<()> {
+        let index = self
+            .selected_list_index
+            .context("Received edit without selecting kakisute index")?;
+        self.app.delete_by_index(index)?;
         Ok(())
     }
 }
 
 #[cfg(test)]
 use speculate::speculate;
+#[cfg(test)]
+struct AppMock {
+    kakisute_list: Vec<KakisuteFile>,
+}
+
+#[cfg(test)]
+impl AppMock {
+    fn new(kakisute_list: Vec<KakisuteFile>) -> Self {
+        AppMock { kakisute_list }
+    }
+}
+
+#[cfg(test)]
+impl AppTrait for AppMock {
+    fn create_kakisute(&self, _: Option<String>) -> Result<String> {
+        Ok("Ok".to_string())
+    }
+    fn get_kakisute_by_index(&self, index: usize) -> Result<&KakisuteFile> {
+        Ok(self.kakisute_list.get(index).unwrap())
+    }
+    fn edit_by_index(&self, _: usize) -> Result<&str> {
+        Ok("ok")
+    }
+    fn delete_by_index(&self, _: usize) -> Result<&str> {
+        Ok("ok")
+    }
+    fn get_contetent_by_index(&self, _: usize) -> Result<String> {
+        Ok("Ok".to_string())
+    }
+
+    fn reload(&mut self) {}
+
+    fn get_kakisute_list(&self) -> Vec<KakisuteFile> {
+        self.kakisute_list.clone()
+    }
+}
 
 #[cfg(test)]
 speculate! {
     describe "empty tui" {
         before {
-            let kakisute_file_list: Vec<KakisuteFile> = vec![];
-            let tui = Tui::new(kakisute_file_list);
+            let kakisute_list: Vec<KakisuteFile> = vec![];
+            let mut app = AppMock::new(kakisute_list);
+            let tui = Tui::new(&mut app);
         }
 
         it "index should be None" {
@@ -139,8 +177,7 @@ speculate! {
         }
 
         it "return error if edit is called" {
-            let app = App::new(None);
-            let res = tui.edit_kakisute(&app).is_err();
+            let res = tui.edit_kakisute().is_err();
             assert!(res)
 
         }
@@ -149,12 +186,13 @@ speculate! {
 
     describe "tui with multiple kakisute" {
         before {
-            let kakisute_file_list: Vec<KakisuteFile> = vec![
+            let kakisute_list: Vec<KakisuteFile> = vec![
                 KakisuteFile::new(Some("file1".to_string())),
                 KakisuteFile::new(Some("file2".to_string())),
                 KakisuteFile::new(Some("file3".to_string())),
             ];
-            let tui = Tui::new(kakisute_file_list);
+            let mut app = AppMock::new(kakisute_list);
+            let tui = Tui::new(&mut app);
         }
 
         it "index should be Some(0)" {
@@ -183,12 +221,13 @@ speculate! {
 
     describe "tui mode function" {
         before {
-            let kakisute_file_list: Vec<KakisuteFile> = vec![
+            let kakisute_list: Vec<KakisuteFile> = vec![
                 KakisuteFile::new(Some("file1".to_string())),
                 KakisuteFile::new(Some("file2".to_string())),
                 KakisuteFile::new(Some("file3".to_string())),
             ];
-            let mut tui = Tui::new(kakisute_file_list);
+            let mut app = AppMock::new(kakisute_list);
+            let mut tui = Tui::new(&mut app);
         }
 
         it "enter_insert_mode should make mode insert" {
@@ -210,12 +249,13 @@ speculate! {
 
     describe "index function" {
         before {
-            let kakisute_file_list: Vec<KakisuteFile> = vec![
+            let kakisute_list: Vec<KakisuteFile> = vec![
                 KakisuteFile::new(Some("file1".to_string())),
                 KakisuteFile::new(Some("file2".to_string())),
                 KakisuteFile::new(Some("file3".to_string())),
             ];
-            let mut tui = Tui::new(kakisute_file_list);
+            let mut app = AppMock::new(kakisute_list);
+            let mut tui = Tui::new(&mut app);
         }
 
         it "select_next shold increment index" {
@@ -240,5 +280,6 @@ speculate! {
             tui.select_previous();
             assert_eq!(tui.selected_list_index,Some(1))
         }
+
     }
 }

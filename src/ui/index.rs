@@ -29,8 +29,7 @@ use tui::{
 use super::tui_app::Mode;
 
 pub fn run_app(app: &mut App) -> Result<()> {
-    let kakisute_list = app.get_kakisute_list();
-    let mut tui = Tui::new(kakisute_list);
+    let mut tui = Tui::new(app);
     enable_raw_mode()?;
     let stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
@@ -41,18 +40,14 @@ pub fn run_app(app: &mut App) -> Result<()> {
         .execute(EnterAlternateScreen)?
         .execute(EnableMouseCapture)?;
     while !tui.exit {
-        render_loop(&mut terminal, app, &mut tui)?
+        render_loop(&mut terminal, &mut tui)?
     }
     Ok(())
 }
 
-fn render_loop(
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-    app: &mut App,
-    tui: &mut Tui,
-) -> Result<()> {
+fn render_loop(terminal: &mut Terminal<CrosstermBackend<Stdout>>, tui: &mut Tui) -> Result<()> {
     terminal.draw(|f| {
-        render(f, DisplayData::new(app, tui));
+        render(f, DisplayData::new(tui));
     })?;
 
     if let Event::Key(KeyEvent {
@@ -76,14 +71,13 @@ fn render_loop(
                         .backend_mut()
                         .execute(LeaveAlternateScreen)?
                         .execute(DisableMouseCapture)?;
-                    tui.create_new_kakisute_with_file_name(app)?;
+                    tui.create_new_kakisute_with_file_name()?;
                     terminal
                         .backend_mut()
                         .execute(EnterAlternateScreen)?
                         .execute(EnableMouseCapture)?;
                     terminal.clear()?;
-                    app.reload();
-                    tui.reload(app.get_kakisute_list());
+                    tui.reload();
                     tui.clear_file_name();
                 }
                 _ => {}
@@ -113,7 +107,7 @@ fn render_loop(
                             .backend_mut()
                             .execute(LeaveAlternateScreen)?
                             .execute(DisableMouseCapture)?;
-                        tui.edit_kakisute(app)?;
+                        tui.edit_kakisute()?;
                         terminal
                             .backend_mut()
                             .execute(EnterAlternateScreen)?
@@ -126,14 +120,13 @@ fn render_loop(
                         .backend_mut()
                         .execute(LeaveAlternateScreen)?
                         .execute(DisableMouseCapture)?;
-                    tui.create_new_kakisute(app)?;
+                    tui.create_new_kakisute()?;
                     terminal
                         .backend_mut()
                         .execute(EnterAlternateScreen)?
                         .execute(EnableMouseCapture)?;
                     terminal.clear()?;
-                    app.reload();
-                    tui.reload(app.get_kakisute_list());
+                    tui.reload();
                 }
                 (KeyCode::Char('d'), KeyModifiers::NONE) => {
                     tui.enter_delete_mode();
@@ -145,11 +138,8 @@ fn render_loop(
                     tui.enter_normal_mode();
                 }
                 (KeyCode::Char('Y'), KeyModifiers::SHIFT) => {
-                    if let Some(index) = tui.selected_list_index {
-                        app.delete_by_index(index)?;
-                        app.reload();
-                        tui.reload(app.get_kakisute_list());
-                    }
+                    tui.delete_kakisute()?;
+                    tui.reload();
                 }
                 _ => {}
             },

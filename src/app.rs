@@ -30,14 +30,6 @@ impl App {
         Ok(kakisute.file_name().to_string())
     }
 
-    pub fn reload(&mut self) {
-        self.kakisute_list = KakisuteList::from_dir(self.data_dir.read_dir());
-    }
-
-    pub fn get_kakisute_list(&self) -> Vec<KakisuteFile> {
-        self.kakisute_list.get_list()
-    }
-
     pub fn get_kakisute_by_index(&self, index: usize) -> Result<&KakisuteFile> {
         let kakisute = self.kakisute_list.get(index);
         if let Some(kakisute) = kakisute {
@@ -101,4 +93,56 @@ impl App {
                 process::exit(1)
             })
     }
+}
+
+impl AppTrait for App {
+    fn create_kakisute(&self, file_name: Option<String>) -> Result<String> {
+        let kakisute = KakisuteFile::new(file_name);
+        operation::edit(&self.data_dir, kakisute.file_name())?;
+        Ok(kakisute.file_name().to_string())
+    }
+
+    fn get_kakisute_by_index(&self, index: usize) -> Result<&KakisuteFile> {
+        let kakisute = self.kakisute_list.get(index);
+        if let Some(kakisute) = kakisute {
+            Ok(kakisute)
+        } else {
+            Err(anyhow!("Could not get the content"))
+        }
+    }
+
+    fn edit_by_index(&self, index: usize) -> Result<&str> {
+        let kakisute = self.get_kakisute_by_index(index)?;
+        operation::edit(&self.data_dir, kakisute.file_name())?;
+        Ok(kakisute.file_name())
+    }
+
+    fn delete_by_index(&self, index: usize) -> Result<&str> {
+        let kakisute = self.get_kakisute_by_index(index)?;
+        operation::delete(&self.data_dir, kakisute.file_name())?;
+        Ok(kakisute.file_name())
+    }
+
+    fn get_contetent_by_index(&self, index: usize) -> Result<String> {
+        let kakisute = self.get_kakisute_by_index(index)?;
+        let content = operation::get_content(&self.data_dir, kakisute.file_name())?;
+        Ok(content)
+    }
+    fn reload(&mut self) {
+        self.kakisute_list = KakisuteList::from_dir(self.data_dir.read_dir());
+    }
+
+    fn get_kakisute_list(&self) -> Vec<KakisuteFile> {
+        self.kakisute_list.get_list()
+    }
+}
+
+pub trait AppTrait {
+    fn create_kakisute(&self, file_name: Option<String>) -> Result<String>;
+    fn get_kakisute_by_index(&self, index: usize) -> Result<&KakisuteFile>;
+    fn edit_by_index(&self, index: usize) -> Result<&str>;
+    fn delete_by_index(&self, index: usize) -> Result<&str>;
+    fn get_contetent_by_index(&self, index: usize) -> Result<String>;
+    fn reload(&mut self);
+    fn get_kakisute_list(&self) -> Vec<KakisuteFile>;
 }
