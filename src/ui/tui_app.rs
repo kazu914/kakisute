@@ -181,6 +181,16 @@ speculate! {
             assert!(res)
 
         }
+
+        it "return error if delete is called" {
+            let res = tui.delete_kakisute().is_err();
+            assert!(res)
+        }
+
+        it "return none if get selected content is called" {
+            let res = tui.get_selected_kakisute_content();
+            assert!(res.is_none())
+        }
     }
 
 
@@ -216,6 +226,22 @@ speculate! {
 
         it "should start with exit false" {
             assert!(!tui.exit)
+        }
+
+        it "return no error if edit is called" {
+            let res = tui.edit_kakisute().is_ok();
+            assert!(res)
+
+        }
+
+        it "return no error if delete is called" {
+            let res = tui.delete_kakisute().is_ok();
+            assert!(res)
+        }
+
+        it "return some if get selected content is called" {
+            let res = tui.get_selected_kakisute_content();
+            assert!(res.is_some())
         }
     }
 
