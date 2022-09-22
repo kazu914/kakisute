@@ -1,4 +1,4 @@
-use crate::app::App;
+use crate::app::AppTrait;
 use crate::ui::display_data::DisplayData;
 use crate::ui::tui_app::Tui;
 use tui::{
@@ -28,7 +28,7 @@ use tui::{
 
 use super::tui_app::Mode;
 
-pub fn run_app(app: &mut App) -> Result<()> {
+pub fn run_app(app: &mut dyn AppTrait) -> Result<()> {
     let mut tui = Tui::new(app);
     enable_raw_mode()?;
     let stdout = io::stdout();
