@@ -1,6 +1,8 @@
 use crate::app::AppTrait;
 use crate::kakisute_file::KakisuteFile;
-use anyhow::{Context, Ok, Result};
+use crate::ui::list_index::ListIndex;
+use anyhow::Result;
+use std::result::Result::Ok;
 
 #[derive(Eq, PartialEq, Debug)]
 pub enum Mode {
@@ -10,7 +12,7 @@ pub enum Mode {
 }
 
 pub struct Tui<'a> {
-    pub selected_list_index: Option<usize>,
+    selected_list_index: ListIndex,
     pub items: Vec<KakisuteFile>,
     pub mode: Mode,
     pub new_file_name: String,
@@ -21,11 +23,7 @@ pub struct Tui<'a> {
 impl<'a> Tui<'a> {
     pub fn new(app: &'a mut dyn AppTrait) -> Self {
         let kakisute_file_list = app.get_kakisute_list();
-        let index = if kakisute_file_list.is_empty() {
-            None
-        } else {
-            Some(0)
-        };
+        let index = ListIndex::new(kakisute_file_list.len());
         Tui {
             selected_list_index: index,
             items: kakisute_file_list,
@@ -39,12 +37,7 @@ impl<'a> Tui<'a> {
     pub fn reload(&mut self) {
         self.app.reload();
         let kakisute_file_list = self.app.get_kakisute_list();
-        let index = if kakisute_file_list.is_empty() {
-            None
-        } else {
-            Some(0)
-        };
-
+        let index = ListIndex::new(kakisute_file_list.len());
         self.selected_list_index = index;
         self.items = kakisute_file_list;
         self.mode = Mode::Normal;
@@ -59,44 +52,26 @@ impl<'a> Tui<'a> {
         self.mode = Mode::DeleteConfirm;
     }
     pub fn select_next(&mut self) {
-        match self.selected_list_index {
-            Some(n) => {
-                if n != self.items.len() - 1 {
-                    self.selected_list_index = Some(n + 1);
-                } else {
-                    self.selected_list_index = Some(0);
-                }
-            }
-            None => {}
-        }
+        self.selected_list_index.increment();
     }
     pub fn select_previous(&mut self) {
-        match self.selected_list_index {
-            Some(n) => {
-                if n > 0 {
-                    self.selected_list_index = Some(n - 1);
-                } else {
-                    self.selected_list_index = Some(self.items.len() - 1);
-                }
-            }
-            None => {}
-        }
+        self.selected_list_index.decrement();
     }
     pub fn clear_file_name(&mut self) {
         self.new_file_name = String::new();
     }
 
     pub fn get_selected_kakisute_content(&self) -> Option<String> {
-        match self.selected_list_index {
-            Some(index) => self.app.get_contetent_by_index(index).ok(),
-            None => None,
+        let index = self.selected_list_index.get_index();
+        if let Ok(index) = index {
+            self.app.get_contetent_by_index(index).ok()
+        } else {
+            None
         }
     }
 
     pub fn edit_kakisute(&self) -> Result<()> {
-        let index = self
-            .selected_list_index
-            .context("Received edit without selecting kakisute index")?;
+        let index = self.selected_list_index.get_index()?;
         self.app.edit_by_index(index)?;
         Ok(())
     }
@@ -112,11 +87,17 @@ impl<'a> Tui<'a> {
     }
 
     pub fn delete_kakisute(&self) -> Result<()> {
-        let index = self
-            .selected_list_index
-            .context("Received edit without selecting kakisute index")?;
+        let index = self.selected_list_index.get_index()?;
         self.app.delete_by_index(index)?;
         Ok(())
+    }
+
+    pub fn is_kakisute_selected(&self) -> bool {
+        self.selected_list_index.is_some()
+    }
+
+    pub fn get_selected_index(&self) -> Option<usize> {
+        self.selected_list_index.get_index().ok()
     }
 }
 
@@ -169,7 +150,7 @@ speculate! {
         }
 
         it "index should be None" {
-            assert_eq!(tui.selected_list_index, None)
+            assert!(tui.selected_list_index.is_none())
         }
 
         it "should start with empty items" {
@@ -179,7 +160,6 @@ speculate! {
         it "return error if edit is called" {
             let res = tui.edit_kakisute().is_err();
             assert!(res)
-
         }
 
         it "return error if delete is called" {
@@ -190,6 +170,11 @@ speculate! {
         it "return none if get selected content is called" {
             let res = tui.get_selected_kakisute_content();
             assert!(res.is_none())
+        }
+
+        it "return false if is_kakisute_selected is called" {
+            let res = tui.is_kakisute_selected();
+            assert!(!res)
         }
     }
 
@@ -206,7 +191,7 @@ speculate! {
         }
 
         it "index should be Some(0)" {
-            assert_eq!(tui.selected_list_index, Some(0))
+            assert_eq!(tui.selected_list_index.get_index().unwrap(), 0)
         }
 
         it "should start with normal mode" {
@@ -243,6 +228,11 @@ speculate! {
             let res = tui.get_selected_kakisute_content();
             assert!(res.is_some())
         }
+
+        it "return true if is_kakisute_selected is called" {
+            let res = tui.is_kakisute_selected();
+            assert!(res)
+        }
     }
 
     describe "tui mode function" {
@@ -271,41 +261,5 @@ speculate! {
             tui.enter_delete_mode();
             assert_eq!(tui.mode, Mode::DeleteConfirm)
         }
-    }
-
-    describe "index function" {
-        before {
-            let kakisute_list: Vec<KakisuteFile> = vec![
-                KakisuteFile::new(Some("file1".to_string())),
-                KakisuteFile::new(Some("file2".to_string())),
-                KakisuteFile::new(Some("file3".to_string())),
-            ];
-            let mut app = AppMock::new(kakisute_list);
-            let mut tui = Tui::new(&mut app);
-        }
-
-        it "select_next shold increment index" {
-            tui.select_next();
-            assert_eq!(tui.selected_list_index,Some(1))
-        }
-
-        it "select_next shold return 0 when index was max" {
-            tui.select_next();
-            tui.select_next();
-            tui.select_next();
-            assert_eq!(tui.selected_list_index,Some(0))
-        }
-
-        it "select_previous shold return max when index was 0" {
-            tui.select_previous();
-            assert_eq!(tui.selected_list_index,Some(2))
-        }
-
-        it "select_previous shold decrease index" {
-            tui.select_previous();
-            tui.select_previous();
-            assert_eq!(tui.selected_list_index,Some(1))
-        }
-
     }
 }

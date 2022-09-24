@@ -40,7 +40,7 @@ impl<'a> DisplayData<'a> {
         let delete_modal = BlockData::new(DELETE_MODAL_BODY, DELETE_MODAL_TITLE);
 
         Self {
-            index: tui.selected_list_index,
+            index: tui.get_selected_index(),
             mode: &tui.mode,
             kakisute_list,
             content,

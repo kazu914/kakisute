@@ -102,7 +102,7 @@ fn render_loop(terminal: &mut Terminal<CrosstermBackend<Stdout>>, tui: &mut Tui)
                     tui.select_previous();
                 }
                 (KeyCode::Char('e'), KeyModifiers::NONE) => {
-                    if tui.selected_list_index.is_some() {
+                    if tui.is_kakisute_selected() {
                         terminal
                             .backend_mut()
                             .execute(LeaveAlternateScreen)?
