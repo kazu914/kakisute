@@ -27,21 +27,21 @@ pub struct DisplayData<'a> {
 
 impl<'a> DisplayData<'a> {
     pub fn new(tui: &'a Tui) -> Self {
-        let kakisute_list = BlockData::new(tui.items.as_ref(), KAKISUTE_LIST_TITLE);
+        let kakisute_list = BlockData::new(tui.get_kakisute_list(), KAKISUTE_LIST_TITLE);
 
         let kakisute_content = tui.get_selected_kakisute_content();
 
         let content = DisplayData::create_content(kakisute_content);
 
-        let new_file_name = DisplayData::create_new_file_name_modal(tui.new_file_name.as_str());
+        let new_file_name = DisplayData::create_new_file_name_modal(tui.get_file_name());
 
-        let help = DisplayData::create_help(&tui.mode);
+        let help = DisplayData::create_help(tui.get_mode());
 
         let delete_modal = BlockData::new(DELETE_MODAL_BODY, DELETE_MODAL_TITLE);
 
         Self {
             index: tui.get_selected_index(),
-            mode: &tui.mode,
+            mode: tui.get_mode(),
             kakisute_list,
             content,
             new_file_name_modal: new_file_name,

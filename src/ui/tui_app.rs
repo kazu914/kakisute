@@ -13,11 +13,11 @@ pub enum Mode {
 
 pub struct Tui<'a> {
     selected_list_index: ListIndex,
-    pub items: Vec<KakisuteFile>,
-    pub mode: Mode,
-    pub new_file_name: String,
-    pub exit: bool,
-    pub app: &'a mut dyn AppTrait,
+    items: Vec<KakisuteFile>,
+    mode: Mode,
+    new_file_name: String,
+    exit: bool,
+    app: &'a mut dyn AppTrait,
 }
 
 impl<'a> Tui<'a> {
@@ -98,6 +98,34 @@ impl<'a> Tui<'a> {
 
     pub fn get_selected_index(&self) -> Option<usize> {
         self.selected_list_index.get_index().ok()
+    }
+
+    pub fn get_kakisute_list(&self) -> &[KakisuteFile] {
+        &self.items
+    }
+
+    pub fn get_mode(&self) -> &Mode {
+        &self.mode
+    }
+
+    pub fn get_file_name(&self) -> &str {
+        &self.new_file_name
+    }
+
+    pub fn push_to_file_name(&mut self, c: char) {
+        self.new_file_name.push(c)
+    }
+
+    pub fn pop_from_file_name(&mut self) {
+        self.new_file_name.pop();
+    }
+
+    pub fn exit(&mut self) {
+        self.exit = true
+    }
+
+    pub fn is_exited(&self) -> bool {
+        self.exit
     }
 }
 

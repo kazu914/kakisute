@@ -39,7 +39,7 @@ pub fn run_app(app: &mut dyn AppTrait) -> Result<()> {
         .backend_mut()
         .execute(EnterAlternateScreen)?
         .execute(EnableMouseCapture)?;
-    while !tui.exit {
+    while !tui.is_exited() {
         render_loop(&mut terminal, &mut tui)?
     }
     Ok(())
@@ -54,17 +54,17 @@ fn render_loop(terminal: &mut Terminal<CrosstermBackend<Stdout>>, tui: &mut Tui)
         code, modifiers, ..
     }) = event::read()?
     {
-        match tui.mode {
+        match tui.get_mode() {
             Mode::Insert => match (code, modifiers) {
                 (KeyCode::Esc, KeyModifiers::NONE) => {
                     tui.clear_file_name();
                     tui.enter_normal_mode();
                 }
                 (KeyCode::Char(c), KeyModifiers::NONE) => {
-                    tui.new_file_name.push(c);
+                    tui.push_to_file_name(c);
                 }
                 (KeyCode::Backspace, KeyModifiers::NONE) => {
-                    tui.new_file_name.pop();
+                    tui.pop_from_file_name();
                 }
                 (KeyCode::Enter, KeyModifiers::NONE) => {
                     terminal
@@ -90,7 +90,7 @@ fn render_loop(terminal: &mut Terminal<CrosstermBackend<Stdout>>, tui: &mut Tui)
                         .execute(LeaveAlternateScreen)?
                         .execute(DisableMouseCapture)?;
                     terminal.show_cursor()?;
-                    tui.exit = true;
+                    tui.exit();
                 }
                 (KeyCode::Char('N'), KeyModifiers::SHIFT) => {
                     tui.enter_insert_mode();
