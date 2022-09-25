@@ -1,54 +1,33 @@
 use crate::app::AppTrait;
 use crate::ui::display_data::DisplayData;
 use crate::ui::tui_app::Tui;
-use tui::{
-    layout::{Alignment, Rect},
-    widgets::Clear,
-};
-use unicode_width::UnicodeWidthStr;
 
-use anyhow::{Ok, Result};
-use std::io::{self, Stdout};
+use std::io;
 
-use crossterm::{
-    event::{
-        self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyModifiers,
-    },
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-    ExecutableCommand,
-};
-use tui::{
-    backend::{Backend, CrosstermBackend},
-    layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
-    text::Text,
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
-    Frame, Terminal,
-};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
+use tui::{backend::CrosstermBackend, Terminal};
 
+use anyhow::Result;
+
+use super::terminal_manager::{TerminalManage, TerminalManager};
 use super::tui_app::Mode;
 
 pub fn run_app(app: &mut dyn AppTrait) -> Result<()> {
     let mut tui = Tui::new(app);
-    enable_raw_mode()?;
     let stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+    let terminal = Terminal::new(backend)?;
+    let mut terminal_manager = TerminalManager::new(terminal);
+    terminal_manager.enter_app_screen()?;
 
-    terminal
-        .backend_mut()
-        .execute(EnterAlternateScreen)?
-        .execute(EnableMouseCapture)?;
     while !tui.is_exited() {
-        render_loop(&mut terminal, &mut tui)?
+        render_loop(&mut terminal_manager, &mut tui)?
     }
     Ok(())
 }
 
-fn render_loop(terminal: &mut Terminal<CrosstermBackend<Stdout>>, tui: &mut Tui) -> Result<()> {
-    terminal.draw(|f| {
-        render(f, DisplayData::new(tui));
-    })?;
+fn render_loop(terminal_manager: &mut dyn TerminalManage, tui: &mut Tui) -> Result<()> {
+    terminal_manager.draw_frame(DisplayData::new(tui))?;
 
     if let Event::Key(KeyEvent {
         code, modifiers, ..
@@ -67,16 +46,9 @@ fn render_loop(terminal: &mut Terminal<CrosstermBackend<Stdout>>, tui: &mut Tui)
                     tui.pop_from_file_name();
                 }
                 (KeyCode::Enter, KeyModifiers::NONE) => {
-                    terminal
-                        .backend_mut()
-                        .execute(LeaveAlternateScreen)?
-                        .execute(DisableMouseCapture)?;
+                    terminal_manager.exit_app_screen()?;
                     tui.create_new_kakisute_with_file_name()?;
-                    terminal
-                        .backend_mut()
-                        .execute(EnterAlternateScreen)?
-                        .execute(EnableMouseCapture)?;
-                    terminal.clear()?;
+                    terminal_manager.enter_app_screen()?;
                     tui.reload();
                     tui.clear_file_name();
                 }
@@ -84,12 +56,7 @@ fn render_loop(terminal: &mut Terminal<CrosstermBackend<Stdout>>, tui: &mut Tui)
             },
             Mode::Normal => match (code, modifiers) {
                 (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
-                    disable_raw_mode()?;
-                    terminal
-                        .backend_mut()
-                        .execute(LeaveAlternateScreen)?
-                        .execute(DisableMouseCapture)?;
-                    terminal.show_cursor()?;
+                    terminal_manager.exit_app_screen()?;
                     tui.exit();
                 }
                 (KeyCode::Char('N'), KeyModifiers::SHIFT) => {
@@ -103,29 +70,17 @@ fn render_loop(terminal: &mut Terminal<CrosstermBackend<Stdout>>, tui: &mut Tui)
                 }
                 (KeyCode::Char('e'), KeyModifiers::NONE) => {
                     if tui.is_kakisute_selected() {
-                        terminal
-                            .backend_mut()
-                            .execute(LeaveAlternateScreen)?
-                            .execute(DisableMouseCapture)?;
+                        terminal_manager.exit_app_screen()?;
                         tui.edit_kakisute()?;
-                        terminal
-                            .backend_mut()
-                            .execute(EnterAlternateScreen)?
-                            .execute(EnableMouseCapture)?;
-                        terminal.clear()?;
+                        terminal_manager.enter_app_screen()?;
+                        terminal_manager.clear_app_screen()?;
                     }
                 }
                 (KeyCode::Char('n'), KeyModifiers::NONE) => {
-                    terminal
-                        .backend_mut()
-                        .execute(LeaveAlternateScreen)?
-                        .execute(DisableMouseCapture)?;
+                    terminal_manager.exit_app_screen()?;
                     tui.create_new_kakisute()?;
-                    terminal
-                        .backend_mut()
-                        .execute(EnterAlternateScreen)?
-                        .execute(EnableMouseCapture)?;
-                    terminal.clear()?;
+                    terminal_manager.enter_app_screen()?;
+                    terminal_manager.clear_app_screen()?;
                     tui.reload();
                 }
                 (KeyCode::Char('d'), KeyModifiers::NONE) => {
@@ -146,117 +101,4 @@ fn render_loop(terminal: &mut Terminal<CrosstermBackend<Stdout>>, tui: &mut Tui)
         }
     };
     Ok(())
-}
-
-fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(1)
-        .constraints([Constraint::Min(3), Constraint::Length(3)].as_ref())
-        .split(f.size());
-
-    let content_chunk = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
-        .split(chunks[0]);
-
-    let file_names = display_data
-        .kakisute_list
-        .body
-        .iter()
-        .map(|file| ListItem::new(file.file_name()))
-        .collect::<Vec<ListItem>>();
-
-    let list = List::new(file_names)
-        .block(
-            Block::default()
-                .title(display_data.kakisute_list.title)
-                .borders(Borders::ALL)
-                .border_style(match display_data.mode {
-                    Mode::Normal => Style::default().fg(Color::Blue),
-                    _ => Style::default(),
-                }),
-        )
-        .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
-        .highlight_symbol(">>");
-    let mut state = ListState::default();
-    state.select(display_data.index);
-
-    f.render_stateful_widget(list, content_chunk[0], &mut state);
-
-    let paragraph = Paragraph::new(Text::from(display_data.content.body))
-        .wrap(Wrap { trim: false })
-        .block(
-            Block::default()
-                .title(display_data.content.title)
-                .borders(Borders::ALL),
-        );
-    f.render_widget(paragraph, content_chunk[1]);
-
-    let help = Paragraph::new(Text::from(display_data.help.body)).block(
-        Block::default()
-            .title(display_data.help.title)
-            .borders(Borders::ALL),
-    );
-    f.render_widget(help, chunks[1]);
-
-    match display_data.mode {
-        Mode::Insert => {
-            let input = Paragraph::new(display_data.new_file_name_modal.body)
-                .style(Style::default().fg(Color::Blue))
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .title(display_data.new_file_name_modal.title)
-                        .title_alignment(Alignment::Center),
-                );
-            let area = centered_rect(50, 3, f.size());
-            f.render_widget(Clear, area); //this clears out the background
-            f.render_widget(input, area);
-            f.set_cursor(
-                area.x + display_data.new_file_name_modal.body.width_cjk() as u16 + 1,
-                area.y + 1,
-            )
-        }
-        Mode::DeleteConfirm => {
-            let input = Paragraph::new(display_data.delete_modal.body)
-                .style(Style::default().fg(Color::Red))
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .title(display_data.delete_modal.title)
-                        .title_alignment(Alignment::Center),
-                );
-            let area = centered_rect(50, 3, f.size());
-            f.render_widget(Clear, area); //this clears out the background
-            f.render_widget(input, area);
-        }
-        _ => {}
-    }
-}
-
-fn centered_rect(percent_x: u16, height: u16, r: Rect) -> Rect {
-    let popup_layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Percentage(50),
-                Constraint::Length(height),
-                Constraint::Percentage(50),
-            ]
-            .as_ref(),
-        )
-        .split(r);
-
-    Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(
-            [
-                Constraint::Percentage((100 - percent_x) / 2),
-                Constraint::Percentage(percent_x),
-                Constraint::Percentage((100 - percent_x) / 2),
-            ]
-            .as_ref(),
-        )
-        .split(popup_layout[1])[1]
 }
