@@ -11,7 +11,7 @@ pub enum Mode {
     DeleteConfirm,
 }
 
-pub struct Tui<'a> {
+pub struct AppInteractor<'a> {
     selected_list_index: ListIndex,
     items: Vec<KakisuteFile>,
     mode: Mode,
@@ -20,11 +20,11 @@ pub struct Tui<'a> {
     app: &'a mut dyn AppTrait,
 }
 
-impl<'a> Tui<'a> {
+impl<'a> AppInteractor<'a> {
     pub fn new(app: &'a mut dyn AppTrait) -> Self {
         let kakisute_file_list = app.get_kakisute_list();
         let index = ListIndex::new(kakisute_file_list.len());
-        Tui {
+        AppInteractor {
             selected_list_index: index,
             items: kakisute_file_list,
             mode: Mode::Normal,
@@ -174,7 +174,7 @@ speculate! {
         before {
             let kakisute_list: Vec<KakisuteFile> = vec![];
             let mut app = AppMock::new(kakisute_list);
-            let tui = Tui::new(&mut app);
+            let tui = AppInteractor::new(&mut app);
         }
 
         it "index should be None" {
@@ -215,7 +215,7 @@ speculate! {
                 KakisuteFile::new(Some("file3".to_string())),
             ];
             let mut app = AppMock::new(kakisute_list);
-            let tui = Tui::new(&mut app);
+            let tui = AppInteractor::new(&mut app);
         }
 
         it "index should be Some(0)" {
@@ -271,7 +271,7 @@ speculate! {
                 KakisuteFile::new(Some("file3".to_string())),
             ];
             let mut app = AppMock::new(kakisute_list);
-            let mut tui = Tui::new(&mut app);
+            let mut tui = AppInteractor::new(&mut app);
         }
 
         it "enter_insert_mode should make mode insert" {

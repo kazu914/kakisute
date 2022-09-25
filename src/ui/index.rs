@@ -1,19 +1,14 @@
+use super::app_interactor::{AppInteractor, Mode};
+use super::display_data::DisplayData;
+use super::terminal_manager::{TerminalManage, TerminalManager};
 use crate::app::AppTrait;
-use crate::ui::display_data::DisplayData;
-use crate::ui::tui_app::Tui;
-
-use std::io;
-
+use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
+use std::io;
 use tui::{backend::CrosstermBackend, Terminal};
 
-use anyhow::Result;
-
-use super::terminal_manager::{TerminalManage, TerminalManager};
-use super::tui_app::Mode;
-
 pub fn run_app(app: &mut dyn AppTrait) -> Result<()> {
-    let mut tui = Tui::new(app);
+    let mut tui = AppInteractor::new(app);
     let stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
     let terminal = Terminal::new(backend)?;
@@ -26,7 +21,7 @@ pub fn run_app(app: &mut dyn AppTrait) -> Result<()> {
     Ok(())
 }
 
-fn render_loop(terminal_manager: &mut dyn TerminalManage, tui: &mut Tui) -> Result<()> {
+fn render_loop(terminal_manager: &mut dyn TerminalManage, tui: &mut AppInteractor) -> Result<()> {
     terminal_manager.draw_frame(DisplayData::new(tui))?;
 
     if let Event::Key(KeyEvent {

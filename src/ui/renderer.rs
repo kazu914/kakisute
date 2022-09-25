@@ -14,7 +14,7 @@ use tui::{
     Frame,
 };
 
-use super::tui_app::Mode;
+use super::app_interactor::Mode;
 
 pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
     let chunks = Layout::default()

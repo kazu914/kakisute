@@ -1,6 +1,5 @@
 use crate::kakisute_file::KakisuteFile;
-use crate::ui::tui_app::Mode;
-use crate::ui::tui_app::Tui;
+use crate::ui::app_interactor::{AppInteractor, Mode};
 
 const DELETE_MODAL_BODY: &str = "Are you sure you want to delete? (Y/n)";
 const DELETE_MODAL_TITLE: &str = "Confirm Modal";
@@ -26,7 +25,7 @@ pub struct DisplayData<'a> {
 }
 
 impl<'a> DisplayData<'a> {
-    pub fn new(tui: &'a Tui) -> Self {
+    pub fn new(tui: &'a AppInteractor) -> Self {
         let kakisute_list = BlockData::new(tui.get_kakisute_list(), KAKISUTE_LIST_TITLE);
 
         let kakisute_content = tui.get_selected_kakisute_content();
