@@ -170,44 +170,44 @@ impl AppTrait for AppMock {
 
 #[cfg(test)]
 speculate! {
-    describe "empty tui" {
+    describe "empty app_interactor" {
         before {
             let kakisute_list: Vec<KakisuteFile> = vec![];
             let mut app = AppMock::new(kakisute_list);
-            let tui = AppInteractor::new(&mut app);
+            let app_interactor = AppInteractor::new(&mut app);
         }
 
         it "index should be None" {
-            assert!(tui.selected_list_index.is_none())
+            assert!(app_interactor.selected_list_index.is_none())
         }
 
         it "should start with empty items" {
-            assert_eq!(tui.items.len(), 0)
+            assert_eq!(app_interactor.items.len(), 0)
         }
 
         it "return error if edit is called" {
-            let res = tui.edit_kakisute().is_err();
+            let res = app_interactor.edit_kakisute().is_err();
             assert!(res)
         }
 
         it "return error if delete is called" {
-            let res = tui.delete_kakisute().is_err();
+            let res = app_interactor.delete_kakisute().is_err();
             assert!(res)
         }
 
         it "return none if get selected content is called" {
-            let res = tui.get_selected_kakisute_content();
+            let res = app_interactor.get_selected_kakisute_content();
             assert!(res.is_none())
         }
 
         it "return false if is_kakisute_selected is called" {
-            let res = tui.is_kakisute_selected();
+            let res = app_interactor.is_kakisute_selected();
             assert!(!res)
         }
     }
 
 
-    describe "tui with multiple kakisute" {
+    describe "app_interactor with multiple kakisute" {
         before {
             let kakisute_list: Vec<KakisuteFile> = vec![
                 KakisuteFile::new(Some("file1".to_string())),
@@ -215,55 +215,55 @@ speculate! {
                 KakisuteFile::new(Some("file3".to_string())),
             ];
             let mut app = AppMock::new(kakisute_list);
-            let tui = AppInteractor::new(&mut app);
+            let app_interactor = AppInteractor::new(&mut app);
         }
 
         it "index should be Some(0)" {
-            assert_eq!(tui.selected_list_index.get_index().unwrap(), 0)
+            assert_eq!(app_interactor.selected_list_index.get_index().unwrap(), 0)
         }
 
         it "should start with normal mode" {
-            assert_eq!(tui.mode, Mode::Normal)
+            assert_eq!(app_interactor.mode, Mode::Normal)
         }
 
         it "should start with given items" {
-            assert_eq!(tui.items.len(), 3);
-            assert!(tui.items[0].file_name().contains("file1"));
-            assert!(tui.items[1].file_name().contains("file2"));
-            assert!(tui.items[2].file_name().contains("file3"));
+            assert_eq!(app_interactor.items.len(), 3);
+            assert!(app_interactor.items[0].file_name().contains("file1"));
+            assert!(app_interactor.items[1].file_name().contains("file2"));
+            assert!(app_interactor.items[2].file_name().contains("file3"));
         }
 
         it "should start with empty file name" {
-            assert_eq!(tui.new_file_name, "")
+            assert_eq!(app_interactor.new_file_name, "")
         }
 
         it "should start with exit false" {
-            assert!(!tui.exit)
+            assert!(!app_interactor.exit)
         }
 
         it "return no error if edit is called" {
-            let res = tui.edit_kakisute().is_ok();
+            let res = app_interactor.edit_kakisute().is_ok();
             assert!(res)
 
         }
 
         it "return no error if delete is called" {
-            let res = tui.delete_kakisute().is_ok();
+            let res = app_interactor.delete_kakisute().is_ok();
             assert!(res)
         }
 
         it "return some if get selected content is called" {
-            let res = tui.get_selected_kakisute_content();
+            let res = app_interactor.get_selected_kakisute_content();
             assert!(res.is_some())
         }
 
         it "return true if is_kakisute_selected is called" {
-            let res = tui.is_kakisute_selected();
+            let res = app_interactor.is_kakisute_selected();
             assert!(res)
         }
     }
 
-    describe "tui mode function" {
+    describe "app_interactor mode function" {
         before {
             let kakisute_list: Vec<KakisuteFile> = vec![
                 KakisuteFile::new(Some("file1".to_string())),
@@ -271,23 +271,23 @@ speculate! {
                 KakisuteFile::new(Some("file3".to_string())),
             ];
             let mut app = AppMock::new(kakisute_list);
-            let mut tui = AppInteractor::new(&mut app);
+            let mut app_interactor = AppInteractor::new(&mut app);
         }
 
         it "enter_insert_mode should make mode insert" {
-            tui.enter_insert_mode();
-            assert_eq!(tui.mode, Mode::Insert)
+            app_interactor.enter_insert_mode();
+            assert_eq!(app_interactor.mode, Mode::Insert)
         }
 
         it "enter_normal_mode should make mode insert" {
-            tui.enter_insert_mode();
-            tui.enter_normal_mode();
-            assert_eq!(tui.mode, Mode::Normal)
+            app_interactor.enter_insert_mode();
+            app_interactor.enter_normal_mode();
+            assert_eq!(app_interactor.mode, Mode::Normal)
         }
 
         it "enter_delete_mode should make mode delete" {
-            tui.enter_delete_mode();
-            assert_eq!(tui.mode, Mode::DeleteConfirm)
+            app_interactor.enter_delete_mode();
+            assert_eq!(app_interactor.mode, Mode::DeleteConfirm)
         }
     }
 }
