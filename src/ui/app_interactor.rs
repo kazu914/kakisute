@@ -57,6 +57,12 @@ impl<'a> AppInteractor<'a> {
     pub fn select_previous(&mut self) {
         self.selected_list_index.decrement();
     }
+    pub fn select_next_n(&mut self, n: u16) {
+        self.selected_list_index.increment_n(n);
+    }
+    pub fn select_previous_n(&mut self, n: u16) {
+        self.selected_list_index.decrement_n(n);
+    }
     pub fn clear_file_name(&mut self) {
         self.new_file_name = String::new();
     }

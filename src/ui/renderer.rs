@@ -16,16 +16,34 @@ use tui::{
 
 use super::app_interactor::Mode;
 
+pub const HELP_BOX_LENGTH: u16 = 3;
+pub const CONTENT_CHUNK_MIN_SIZE: u16 = 3;
+pub const LIST_WIDTH_PERCENT: u16 = 20;
+pub const CONTENT_WIDTH_PERCENT: u16 = 80;
+pub const MARGIN: u16 = 1;
+
 pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .margin(1)
-        .constraints([Constraint::Min(3), Constraint::Length(3)].as_ref())
+        .margin(MARGIN)
+        .constraints(
+            [
+                Constraint::Min(CONTENT_CHUNK_MIN_SIZE),
+                Constraint::Length(HELP_BOX_LENGTH),
+            ]
+            .as_ref(),
+        )
         .split(f.size());
 
     let content_chunk = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
+        .constraints(
+            [
+                Constraint::Percentage(LIST_WIDTH_PERCENT),
+                Constraint::Percentage(CONTENT_WIDTH_PERCENT),
+            ]
+            .as_ref(),
+        )
         .split(chunks[0]);
 
     let file_names = display_data

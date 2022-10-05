@@ -43,6 +43,10 @@ impl<B: Backend> TerminalManage for TerminalManager<B> {
         self.terminal.clear()?;
         Ok(())
     }
+
+    fn get_terminal_height(&self) -> Result<u16> {
+        Ok(self.terminal.size().unwrap().height)
+    }
 }
 
 pub trait TerminalManage {
@@ -50,4 +54,5 @@ pub trait TerminalManage {
     fn draw_frame(&mut self, display_data: DisplayData) -> Result<()>;
     fn exit_app_screen(&mut self) -> Result<()>;
     fn clear_app_screen(&mut self) -> Result<()>;
+    fn get_terminal_height(&self) -> Result<u16>;
 }

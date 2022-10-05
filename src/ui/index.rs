@@ -1,5 +1,6 @@
 use super::app_interactor::{AppInteractor, Mode};
 use super::display_data::DisplayData;
+use super::renderer::{HELP_BOX_LENGTH, MARGIN};
 use super::terminal_manager::{TerminalManage, TerminalManager};
 use crate::app::AppTrait;
 use anyhow::Result;
@@ -74,8 +75,18 @@ fn handle_input(
             (KeyCode::Char('j'), KeyModifiers::NONE) => {
                 app_interactor.select_next();
             }
+            (KeyCode::Char('u'), KeyModifiers::CONTROL) => {
+                let terminal_height = terminal_manager.get_terminal_height()?;
+                let list_height = terminal_height - HELP_BOX_LENGTH - MARGIN * 4;
+                app_interactor.select_previous_n(list_height / 2);
+            }
             (KeyCode::Char('k'), KeyModifiers::NONE) => {
                 app_interactor.select_previous();
+            }
+            (KeyCode::Char('d'), KeyModifiers::CONTROL) => {
+                let terminal_height = terminal_manager.get_terminal_height()?;
+                let list_height = terminal_height - HELP_BOX_LENGTH - MARGIN * 4;
+                app_interactor.select_next_n(list_height / 2);
             }
             (KeyCode::Char('e'), KeyModifiers::NONE) => {
                 if app_interactor.is_kakisute_selected() {

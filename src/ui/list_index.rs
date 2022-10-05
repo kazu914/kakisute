@@ -17,11 +17,34 @@ impl ListIndex {
         }
         self.index = Some((self.index.unwrap() + 1) % self.size);
     }
+
+    pub fn increment_n(&mut self, n: u16) {
+        if self.is_none() {
+            return;
+        }
+        if self.index.unwrap() + usize::from(n) > self.size - 1 {
+            self.index = Some(self.size - 1)
+        } else {
+            self.index = Some(self.index.unwrap() + usize::from(n));
+        }
+    }
+
     pub fn decrement(&mut self) {
         if self.is_none() {
             return;
         }
         self.index = Some((self.index.unwrap() + self.size - 1) % self.size);
+    }
+
+    pub fn decrement_n(&mut self, n: u16) {
+        if self.is_none() {
+            return;
+        }
+        if self.index.unwrap() < usize::from(n) {
+            self.index = Some(0)
+        } else {
+            self.index = Some(self.index.unwrap() - usize::from(n));
+        }
     }
 
     pub fn is_some(&self) -> bool {
@@ -102,6 +125,20 @@ speculate! {
             assert_eq!(res, 0)
         }
 
+        it "increment_n from 0 -> 2, given 2"{
+            let  mut list_index = ListIndex::new(3);
+            list_index.increment_n(2);
+            let res = list_index.get_index().unwrap();
+            assert_eq!(res, 2)
+        }
+
+        it "increment_n from 0 -> 2, given 3"{
+            let  mut list_index = ListIndex::new(3);
+            list_index.increment_n(3);
+            let res = list_index.get_index().unwrap();
+            assert_eq!(res, 2)
+        }
+
         it "decrement from 0 -> 2"{
             let mut list_index = ListIndex::new(3);
             list_index.decrement();
@@ -115,6 +152,27 @@ speculate! {
             list_index.decrement();
             let res = list_index.get_index().unwrap();
             assert_eq!(res, 1);
+        }
+
+
+        it "decrement_n from 2 -> 0, given 2"{
+            let  mut list_index = ListIndex::new(3);
+            list_index.increment_n(2);
+            let res = list_index.get_index().unwrap();
+            assert_eq!(res, 2);
+            list_index.decrement_n(2);
+            let res = list_index.get_index().unwrap();
+            assert_eq!(res, 0)
+        }
+
+        it "decrement_n from 0 -> 2, given 3"{
+            let  mut list_index = ListIndex::new(3);
+            list_index.increment_n(2);
+            let res = list_index.get_index().unwrap();
+            assert_eq!(res, 2);
+            list_index.decrement_n(3);
+            let res = list_index.get_index().unwrap();
+            assert_eq!(res, 0)
         }
     }
 
