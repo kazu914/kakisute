@@ -45,7 +45,7 @@ impl KakisuteList {
     }
 
     fn get_latest_index(&self) -> usize {
-        self.files.len()
+        self.files.len() - 1
     }
 
     fn get_index_by_file_name(&self, file_name: &str) -> Option<usize> {

@@ -24,38 +24,6 @@ impl App {
         }
     }
 
-    pub fn create_kakisute(&self, file_name: Option<String>) -> Result<String> {
-        let kakisute = KakisuteFile::new(file_name);
-        operation::edit(&self.data_dir, kakisute.file_name())?;
-        Ok(kakisute.file_name().to_string())
-    }
-
-    pub fn get_kakisute_by_index(&self, index: usize) -> Result<&KakisuteFile> {
-        let kakisute = self.kakisute_list.get(index);
-        if let Some(kakisute) = kakisute {
-            Ok(kakisute)
-        } else {
-            Err(anyhow!("Could not get the content"))
-        }
-    }
-
-    pub fn edit_by_index(&self, index: usize) -> Result<&str> {
-        let kakisute = self.get_kakisute_by_index(index)?;
-        operation::edit(&self.data_dir, kakisute.file_name())?;
-        Ok(kakisute.file_name())
-    }
-
-    pub fn delete_by_index(&self, index: usize) -> Result<&str> {
-        let kakisute = self.get_kakisute_by_index(index)?;
-        operation::delete(&self.data_dir, kakisute.file_name())?;
-        Ok(kakisute.file_name())
-    }
-    pub fn get_contetent_by_index(&self, index: usize) -> Result<String> {
-        let kakisute = self.get_kakisute_by_index(index)?;
-        let content = operation::get_content(&self.data_dir, kakisute.file_name())?;
-        Ok(content)
-    }
-
     pub fn delete_by_single_query(&self, query: SingleQuery) -> Result<&str> {
         let index = self.get_index_by_single_query(query);
         self.delete_by_index(index)
