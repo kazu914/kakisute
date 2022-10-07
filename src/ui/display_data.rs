@@ -26,7 +26,10 @@ pub struct DisplayData<'a> {
 
 impl<'a> DisplayData<'a> {
     pub fn new(app_interactor: &'a AppInteractor) -> Self {
-        let kakisute_list = BlockData::new(app_interactor.get_kakisute_list(), KAKISUTE_LIST_TITLE);
+        let kakisute_list = DisplayData::create_kakisute_list(
+            app_interactor.get_kakisute_list(),
+            app_interactor.get_selected_index(),
+        );
 
         let kakisute_content = app_interactor.get_selected_kakisute_content();
 
@@ -47,6 +50,23 @@ impl<'a> DisplayData<'a> {
             help,
             delete_modal,
         }
+    }
+
+    fn create_kakisute_list(
+        kakisute_list: &'a [KakisuteFile],
+        index: Option<usize>,
+    ) -> BlockData<&'a [KakisuteFile]> {
+        let title = if let Some(index) = index {
+            format!(
+                "{} ({}/{})",
+                KAKISUTE_LIST_TITLE.to_owned(),
+                &(index + 1).to_string(),
+                &kakisute_list.len().to_string()
+            )
+        } else {
+            KAKISUTE_LIST_TITLE.to_string()
+        };
+        BlockData::new(kakisute_list, &title)
     }
 
     fn create_content(kakisute_content: Option<String>) -> BlockData<String> {
