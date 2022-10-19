@@ -8,7 +8,7 @@ use unicode_width::UnicodeWidthStr;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
+    style::{Color, Style},
     text::Text,
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
     Frame,
@@ -63,7 +63,7 @@ pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
                     _ => Style::default(),
                 }),
         )
-        .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+        .highlight_style(Style::default().bg(Color::Blue).fg(Color::Black))
         .highlight_symbol(">>");
     let mut state = ListState::default();
     state.select(display_data.index);
