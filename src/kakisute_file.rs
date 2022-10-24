@@ -2,7 +2,7 @@ use std::path::Path;
 
 use chrono::{DateTime, Local, LocalResult, NaiveDateTime, TimeZone};
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
 pub struct KakisuteFile {
     file_name: String,
     created_at: Option<DateTime<Local>>,
