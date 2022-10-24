@@ -72,7 +72,7 @@ fn handle_input(
             (KeyCode::Char('N'), KeyModifiers::SHIFT) => {
                 app_interactor.enter_insert_mode();
             }
-            (KeyCode::Char('j'), KeyModifiers::NONE) => {
+            (KeyCode::Char('j'), KeyModifiers::NONE) | (KeyCode::Down, KeyModifiers::NONE) => {
                 app_interactor.select_next();
             }
             (KeyCode::Char('u'), KeyModifiers::CONTROL) => {
@@ -80,7 +80,7 @@ fn handle_input(
                 let list_height = terminal_height - HELP_BOX_LENGTH - MARGIN * 4;
                 app_interactor.select_previous_n(list_height / 2);
             }
-            (KeyCode::Char('k'), KeyModifiers::NONE) => {
+            (KeyCode::Char('k'), KeyModifiers::NONE) | (KeyCode::Up, KeyModifiers::NONE) => {
                 app_interactor.select_previous();
             }
             (KeyCode::Char('d'), KeyModifiers::CONTROL) => {
