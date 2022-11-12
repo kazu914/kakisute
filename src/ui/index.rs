@@ -52,6 +52,9 @@ fn handle_input(
             (KeyCode::Char(c), KeyModifiers::NONE) => {
                 app_interactor.push_to_file_name(c);
             }
+            (KeyCode::Char(c), KeyModifiers::SHIFT) => {
+                app_interactor.push_to_file_name(c);
+            }
             (KeyCode::Backspace, KeyModifiers::NONE) => {
                 app_interactor.pop_from_file_name();
             }
