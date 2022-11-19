@@ -1,6 +1,7 @@
 use std::io::{self, Write};
 
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
+use clap_complete::{generate, Generator, Shell};
 use kakisute::{
     app::{App, AppTrait},
     kakisute_list, ui,
@@ -58,6 +59,12 @@ enum Action {
 
     /// Start TUI mode
     Interact {},
+
+    /// Generate completion script
+    Completion {
+        #[clap(long, short, arg_enum)]
+        shell: Shell,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -114,6 +121,15 @@ fn main() -> anyhow::Result<()> {
         Action::Interact {} => {
             let _ = ui::index::run_app(&mut app);
         }
+        Action::Completion { shell } => {
+            print_completer(shell);
+        }
     }
     Ok(())
+}
+
+fn print_completer<G: Generator>(generator: G) {
+    let mut app = Args::command();
+    let name = app.get_name().to_owned();
+    generate(generator, &mut app, name, &mut std::io::stdout());
 }
