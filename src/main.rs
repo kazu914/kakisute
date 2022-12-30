@@ -1,6 +1,11 @@
-use clap::{Parser, Subcommand};
-use kakisute::{app::App, kakisute_list};
-use scrawl::error;
+use std::io::{self, Write};
+
+use clap::{AppSettings, CommandFactory, Parser, Subcommand};
+use clap_complete::{generate, Generator, Shell};
+use kakisute::{
+    app::{App, AppTrait},
+    kakisute_list, ui,
+};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -8,77 +13,124 @@ struct Args {
     #[clap(subcommand)]
     action: Action,
 
-    /// <Optional> Specify the directory to store kakisute files
+    /// <Optional> Specify the directory to store kakisute
     #[clap(long = "data_dir")]
     data_dir: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
+#[clap(setting(AppSettings::DeriveDisplayOrder))]
 enum Action {
     /// Create new kakisute
     New {
-        /// <Optional> Specify file name
-        file_name: Option<String>,
+        /// <Optional> Specify kakisute name
+        kakisute_name: Option<String>,
     },
 
-    /// Print kakisute files
+    /// Print kakisute list
     List {},
 
-    /// Edit existing kakiste
+    /// Edit kakiste
     Edit {
         #[clap(long = "latest")]
         is_latest: bool,
-        file_name: Option<String>,
+        kakisute_name: Option<String>,
     },
 
-    /// Show existing kakisute
+    /// Show kakisute content
     Show {
         #[clap(long = "latest")]
         is_latest: bool,
-        file_name: Option<String>,
+        kakisute_name: Option<String>,
     },
 
-    /// Inspect existing kakisute
+    /// Inspect kakisute
     Inspect {
         #[clap(long = "latest")]
         is_latest: bool,
-        file_name: Option<String>,
+        kakisute_name: Option<String>,
+    },
+
+    /// Delete kakisute
+    Delete {
+        #[clap(long = "latest")]
+        is_latest: bool,
+        kakisute_name: Option<String>,
+    },
+
+    /// Start TUI mode
+    Interact {},
+
+    /// Generate completion script
+    Completion {
+        #[clap(long, short, arg_enum)]
+        shell: Shell,
     },
 }
 
-fn main() -> Result<(), error::ScrawlError> {
+fn main() -> anyhow::Result<()> {
     let cli = Args::parse();
 
-    let app = App::new(cli.data_dir);
+    let mut app = App::new(cli.data_dir);
 
     match cli.action {
-        Action::New { file_name } => {
-            app.create_kakisute(file_name);
+        Action::New { kakisute_name } => {
+            let created_kakisute_name = app.create_kakisute(kakisute_name)?;
+            println!("Created: {}", created_kakisute_name);
         }
         Action::List {} => {
-            app.list();
+            let kakisute_list = app.get_kakisute_list();
+
+            let stdout = io::stdout();
+            let mut handle = io::BufWriter::new(stdout);
+            for kakisute in kakisute_list {
+                writeln!(handle, "{}", kakisute.file_name()).unwrap();
+            }
         }
         Action::Edit {
             is_latest,
-            file_name,
+            kakisute_name,
         } => {
-            let query = kakisute_list::single_query::SingleQuery::new(is_latest, file_name);
-            app.edit(query);
+            let query = kakisute_list::single_query::SingleQuery::new(is_latest, kakisute_name);
+            let edited_kakisute_name = app.edit_by_single_query(query)?;
+            println!("Edited: {}", edited_kakisute_name);
         }
         Action::Show {
             is_latest,
-            file_name,
+            kakisute_name,
         } => {
-            let query = kakisute_list::single_query::SingleQuery::new(is_latest, file_name);
-            app.show(query);
+            let query = kakisute_list::single_query::SingleQuery::new(is_latest, kakisute_name);
+            let content = app.get_content_by_single_query(query)?;
+            println!("{}", content);
         }
         Action::Inspect {
             is_latest,
-            file_name,
+            kakisute_name,
         } => {
-            let query = kakisute_list::single_query::SingleQuery::new(is_latest, file_name);
-            app.inspect(query);
+            let query = kakisute_list::single_query::SingleQuery::new(is_latest, kakisute_name);
+            let info = app.inspect_by_query(query)?;
+            println!("{}", info);
+        }
+        Action::Delete {
+            is_latest,
+            kakisute_name,
+        } => {
+            let query = kakisute_list::single_query::SingleQuery::new(is_latest, kakisute_name);
+            let deleted_kakisute_name = app.delete_by_single_query(query)?;
+            println!("Deleted: {}", deleted_kakisute_name);
+        }
+        Action::Interact {} => {
+            let _ = ui::index::run_app(&mut app);
+        }
+        Action::Completion { shell } => {
+            print_completer(shell);
         }
     }
     Ok(())
+}
+
+fn print_completer<G: Generator>(generator: G) {
+    let mut app = Args::command();
+    let name = app.get_name().to_owned();
+    generate(generator, &mut app, name, &mut std::io::stdout());
 }

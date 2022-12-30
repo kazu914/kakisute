@@ -45,7 +45,7 @@ impl DataDir {
     }
 
     fn create_dir(path: &PathBuf) {
-        fs::create_dir_all(&path).unwrap_or_else(|err| {
+        fs::create_dir_all(path).unwrap_or_else(|err| {
             eprintln!("Error: Can't make data directory: {:?}", path);
             eprintln!("{:?}", err);
             process::exit(1)
