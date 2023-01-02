@@ -17,12 +17,12 @@ pub struct AppInteractor<'a> {
     mode: Mode,
     new_file_name: String,
     exit: bool,
-    app: &'a mut dyn ServiceTrait,
+    service: &'a mut dyn ServiceTrait,
 }
 
 impl<'a> AppInteractor<'a> {
-    pub fn new(app: &'a mut dyn ServiceTrait) -> Self {
-        let kakisute_file_list = app.get_kakisute_list();
+    pub fn new(service: &'a mut dyn ServiceTrait) -> Self {
+        let kakisute_file_list = service.get_kakisute_list();
         let index = ListIndex::new(kakisute_file_list.len());
         AppInteractor {
             selected_list_index: index,
@@ -30,13 +30,13 @@ impl<'a> AppInteractor<'a> {
             mode: Mode::Normal,
             new_file_name: String::new(),
             exit: false,
-            app,
+            service,
         }
     }
 
     pub fn reload(&mut self) {
-        self.app.reload();
-        let kakisute_file_list = self.app.get_kakisute_list();
+        self.service.reload();
+        let kakisute_file_list = self.service.get_kakisute_list();
         let index = ListIndex::new(kakisute_file_list.len());
         self.selected_list_index = index;
         self.items = kakisute_file_list;
@@ -70,7 +70,7 @@ impl<'a> AppInteractor<'a> {
     pub fn get_selected_kakisute_content(&self) -> Option<String> {
         let index = self.selected_list_index.get_index();
         if let Ok(index) = index {
-            self.app.get_contetent_by_index(index).ok()
+            self.service.get_contetent_by_index(index).ok()
         } else {
             None
         }
@@ -78,23 +78,24 @@ impl<'a> AppInteractor<'a> {
 
     pub fn edit_kakisute(&self) -> Result<()> {
         let index = self.selected_list_index.get_index()?;
-        self.app.edit_by_index(index)?;
+        self.service.edit_by_index(index)?;
         Ok(())
     }
 
     pub fn create_new_kakisute_with_file_name(&self) -> Result<()> {
-        self.app.create_kakisute(Some(self.new_file_name.clone()))?;
+        self.service
+            .create_kakisute(Some(self.new_file_name.clone()))?;
         Ok(())
     }
 
     pub fn create_new_kakisute(&self) -> Result<()> {
-        self.app.create_kakisute(None)?;
+        self.service.create_kakisute(None)?;
         Ok(())
     }
 
     pub fn delete_kakisute(&self) -> Result<()> {
         let index = self.selected_list_index.get_index()?;
-        self.app.delete_by_index(index)?;
+        self.service.delete_by_index(index)?;
         Ok(())
     }
 
@@ -106,8 +107,11 @@ impl<'a> AppInteractor<'a> {
         self.selected_list_index.get_index().ok()
     }
 
-    pub fn get_kakisute_list(&self) -> &[KakisuteFile] {
-        &self.items
+    pub fn get_kakisute_file_name_list(&self) -> Vec<&str> {
+        self.items
+            .iter()
+            .map(|kakisute| kakisute.file_name())
+            .collect()
     }
 
     pub fn get_mode(&self) -> &Mode {
@@ -138,19 +142,19 @@ impl<'a> AppInteractor<'a> {
 #[cfg(test)]
 use speculate::speculate;
 #[cfg(test)]
-struct AppMock {
+struct ServieMock {
     kakisute_list: Vec<KakisuteFile>,
 }
 
 #[cfg(test)]
-impl AppMock {
+impl ServieMock {
     fn new(kakisute_list: Vec<KakisuteFile>) -> Self {
-        AppMock { kakisute_list }
+        ServieMock { kakisute_list }
     }
 }
 
 #[cfg(test)]
-impl ServiceTrait for AppMock {
+impl ServiceTrait for ServieMock {
     fn create_kakisute(&self, _: Option<String>) -> Result<String> {
         Ok("Ok".to_string())
     }
@@ -179,8 +183,8 @@ speculate! {
     describe "empty app_interactor" {
         before {
             let kakisute_list: Vec<KakisuteFile> = vec![];
-            let mut app = AppMock::new(kakisute_list);
-            let app_interactor = AppInteractor::new(&mut app);
+            let mut service = ServieMock::new(kakisute_list);
+            let app_interactor = AppInteractor::new(&mut service);
         }
 
         it "index should be None" {
@@ -220,8 +224,8 @@ speculate! {
                 KakisuteFile::new(Some("file2".to_string())),
                 KakisuteFile::new(Some("file3".to_string())),
             ];
-            let mut app = AppMock::new(kakisute_list);
-            let app_interactor = AppInteractor::new(&mut app);
+            let mut service = ServieMock::new(kakisute_list);
+            let app_interactor = AppInteractor::new(&mut service);
         }
 
         it "index should be Some(0)" {
@@ -276,8 +280,8 @@ speculate! {
                 KakisuteFile::new(Some("file2".to_string())),
                 KakisuteFile::new(Some("file3".to_string())),
             ];
-            let mut app = AppMock::new(kakisute_list);
-            let mut app_interactor = AppInteractor::new(&mut app);
+            let mut service = ServieMock::new(kakisute_list);
+            let mut app_interactor = AppInteractor::new(&mut service);
         }
 
         it "enter_insert_mode should make mode insert" {
