@@ -1,5 +1,5 @@
-use crate::app::AppTrait;
 use crate::kakisute_file::KakisuteFile;
+use crate::service::ServiceTrait;
 use crate::ui::list_index::ListIndex;
 use anyhow::Result;
 use std::result::Result::Ok;
@@ -17,11 +17,11 @@ pub struct AppInteractor<'a> {
     mode: Mode,
     new_file_name: String,
     exit: bool,
-    app: &'a mut dyn AppTrait,
+    app: &'a mut dyn ServiceTrait,
 }
 
 impl<'a> AppInteractor<'a> {
-    pub fn new(app: &'a mut dyn AppTrait) -> Self {
+    pub fn new(app: &'a mut dyn ServiceTrait) -> Self {
         let kakisute_file_list = app.get_kakisute_list();
         let index = ListIndex::new(kakisute_file_list.len());
         AppInteractor {
@@ -150,7 +150,7 @@ impl AppMock {
 }
 
 #[cfg(test)]
-impl AppTrait for AppMock {
+impl ServiceTrait for AppMock {
     fn create_kakisute(&self, _: Option<String>) -> Result<String> {
         Ok("Ok".to_string())
     }

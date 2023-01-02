@@ -8,16 +8,16 @@ use crate::{
     repository::Repository,
 };
 
-pub struct App {
+pub struct Service {
     kakisute_list: KakisuteList,
     repository: Repository,
 }
 
-impl App {
+impl Service {
     pub fn new(data_dir_arg: Option<String>) -> Self {
         let repository = Repository::new(data_dir_arg);
         let kakisute_list = KakisuteList::from_dir(repository.read_dir());
-        App {
+        Service {
             kakisute_list,
             repository,
         }
@@ -58,7 +58,7 @@ impl App {
     }
 }
 
-impl AppTrait for App {
+impl ServiceTrait for Service {
     fn create_kakisute(&self, file_name: Option<String>) -> Result<String> {
         let kakisute = KakisuteFile::new(file_name);
         self.repository.edit(kakisute.file_name())?;
@@ -100,7 +100,7 @@ impl AppTrait for App {
     }
 }
 
-pub trait AppTrait {
+pub trait ServiceTrait {
     fn create_kakisute(&self, file_name: Option<String>) -> Result<String>;
     fn get_kakisute_by_index(&self, index: usize) -> Result<&KakisuteFile>;
     fn edit_by_index(&self, index: usize) -> Result<&str>;
