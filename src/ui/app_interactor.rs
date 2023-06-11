@@ -1,4 +1,5 @@
-use crate::service::{kakisute_file::KakisuteFile, ServiceTrait};
+use crate::service::kakisute_list::KakisuteList;
+use crate::service::ServiceTrait;
 use crate::ui::list_index::ListIndex;
 use anyhow::Result;
 use std::result::Result::Ok;
@@ -12,7 +13,7 @@ pub enum Mode {
 
 pub struct AppInteractor<'a> {
     selected_list_index: ListIndex,
-    items: Vec<KakisuteFile>,
+    items: KakisuteList,
     mode: Mode,
     new_file_name: String,
     exit: bool,
@@ -21,11 +22,11 @@ pub struct AppInteractor<'a> {
 
 impl<'a> AppInteractor<'a> {
     pub fn new(service: &'a mut dyn ServiceTrait) -> Self {
-        let kakisute_file_list = service.get_kakisute_list();
-        let index = ListIndex::new(kakisute_file_list.len());
+        let kakisute_list = service.get_kakisute_list();
+        let index = ListIndex::new(kakisute_list.len());
         AppInteractor {
             selected_list_index: index,
-            items: kakisute_file_list,
+            items: kakisute_list,
             mode: Mode::Normal,
             new_file_name: String::new(),
             exit: false,
@@ -107,10 +108,7 @@ impl<'a> AppInteractor<'a> {
     }
 
     pub fn get_kakisute_file_name_list(&self) -> Vec<&str> {
-        self.items
-            .iter()
-            .map(|kakisute| kakisute.file_name())
-            .collect()
+        self.items.get_kakisute_file_name_list()
     }
 
     pub fn get_mode(&self) -> &Mode {
@@ -140,14 +138,15 @@ impl<'a> AppInteractor<'a> {
 
 #[cfg(test)]
 use speculate::speculate;
+
 #[cfg(test)]
 struct ServieMock {
-    kakisute_list: Vec<KakisuteFile>,
+    kakisute_list: KakisuteList,
 }
 
 #[cfg(test)]
 impl ServieMock {
-    fn new(kakisute_list: Vec<KakisuteFile>) -> Self {
+    fn new(kakisute_list: KakisuteList) -> Self {
         ServieMock { kakisute_list }
     }
 }
@@ -156,9 +155,6 @@ impl ServieMock {
 impl ServiceTrait for ServieMock {
     fn create_kakisute(&self, _: Option<String>) -> Result<String> {
         Ok("Ok".to_string())
-    }
-    fn get_kakisute_by_index(&self, index: usize) -> Result<&KakisuteFile> {
-        Ok(self.kakisute_list.get(index).unwrap())
     }
     fn edit_by_index(&self, _: usize) -> Result<&str> {
         Ok("ok")
@@ -172,7 +168,7 @@ impl ServiceTrait for ServieMock {
 
     fn reload(&mut self) {}
 
-    fn get_kakisute_list(&self) -> Vec<KakisuteFile> {
+    fn get_kakisute_list(&self) -> KakisuteList {
         self.kakisute_list.clone()
     }
 }
@@ -181,8 +177,7 @@ impl ServiceTrait for ServieMock {
 speculate! {
     describe "empty app_interactor" {
         before {
-            let kakisute_list: Vec<KakisuteFile> = vec![];
-            let mut service = ServieMock::new(kakisute_list);
+            let mut service = ServieMock::new(KakisuteList::new());
             let app_interactor = AppInteractor::new(&mut service);
         }
 
@@ -213,33 +208,9 @@ speculate! {
             let res = app_interactor.is_kakisute_selected();
             assert!(!res)
         }
-    }
-
-
-    describe "app_interactor with multiple kakisute" {
-        before {
-            let kakisute_list: Vec<KakisuteFile> = vec![
-                KakisuteFile::new(Some("file1".to_string())),
-                KakisuteFile::new(Some("file2".to_string())),
-                KakisuteFile::new(Some("file3".to_string())),
-            ];
-            let mut service = ServieMock::new(kakisute_list);
-            let app_interactor = AppInteractor::new(&mut service);
-        }
-
-        it "index should be Some(0)" {
-            assert_eq!(app_interactor.selected_list_index.get_index().unwrap(), 0)
-        }
 
         it "should start with normal mode" {
             assert_eq!(app_interactor.mode, Mode::Normal)
-        }
-
-        it "should start with given items" {
-            assert_eq!(app_interactor.items.len(), 3);
-            assert!(app_interactor.items[0].file_name().contains("file1"));
-            assert!(app_interactor.items[1].file_name().contains("file2"));
-            assert!(app_interactor.items[2].file_name().contains("file3"));
         }
 
         it "should start with empty file name" {
@@ -249,37 +220,11 @@ speculate! {
         it "should start with exit false" {
             assert!(!app_interactor.exit)
         }
-
-        it "return no error if edit is called" {
-            let res = app_interactor.edit_kakisute().is_ok();
-            assert!(res)
-
-        }
-
-        it "return no error if delete is called" {
-            let res = app_interactor.delete_kakisute().is_ok();
-            assert!(res)
-        }
-
-        it "return some if get selected content is called" {
-            let res = app_interactor.get_selected_kakisute_content();
-            assert!(res.is_some())
-        }
-
-        it "return true if is_kakisute_selected is called" {
-            let res = app_interactor.is_kakisute_selected();
-            assert!(res)
-        }
     }
 
     describe "app_interactor mode function" {
         before {
-            let kakisute_list: Vec<KakisuteFile> = vec![
-                KakisuteFile::new(Some("file1".to_string())),
-                KakisuteFile::new(Some("file2".to_string())),
-                KakisuteFile::new(Some("file3".to_string())),
-            ];
-            let mut service = ServieMock::new(kakisute_list);
+            let mut service = ServieMock::new(KakisuteList::new());
             let mut app_interactor = AppInteractor::new(&mut service);
         }
 

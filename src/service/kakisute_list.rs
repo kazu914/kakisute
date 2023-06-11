@@ -34,8 +34,12 @@ impl KakisuteList {
         kakisute_list
     }
 
-    pub fn get_list(&self) -> Vec<KakisuteFile> {
-        self.files.clone()
+    pub fn len(&self) -> usize {
+        self.files.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.files.len() == 0
     }
 
     fn sort(&mut self) {
@@ -48,5 +52,12 @@ impl KakisuteList {
 
     pub fn get(&self, index: usize) -> Option<&KakisuteFile> {
         self.files.get(index)
+    }
+
+    pub fn get_kakisute_file_name_list(&self) -> Vec<&str> {
+        self.files
+            .iter()
+            .map(|kakisute| kakisute.file_name())
+            .collect()
     }
 }

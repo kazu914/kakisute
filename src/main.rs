@@ -84,8 +84,8 @@ fn main() -> anyhow::Result<()> {
 
             let stdout = io::stdout();
             let mut handle = io::BufWriter::new(stdout);
-            for kakisute in kakisute_list {
-                writeln!(handle, "{}", kakisute.file_name()).unwrap();
+            for file_name in kakisute_list.get_kakisute_file_name_list() {
+                writeln!(handle, "{}", file_name).ok();
             }
         }
         Action::Edit {

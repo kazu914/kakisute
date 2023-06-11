@@ -65,14 +65,6 @@ impl<'a> Service<'a> {
         let content = self.repository.get_content(kakisute_file.file_name())?;
         Ok(Kakisute::new(content))
     }
-}
-
-impl ServiceTrait for Service<'_> {
-    fn create_kakisute(&self, file_name: Option<String>) -> Result<String> {
-        let kakisute = KakisuteFile::new(file_name);
-        self.repository.edit(kakisute.file_name())?;
-        Ok(kakisute.file_name().to_string())
-    }
 
     fn get_kakisute_by_index(&self, index: usize) -> Result<&KakisuteFile> {
         let kakisute = self.kakisute_list.get(index);
@@ -81,6 +73,14 @@ impl ServiceTrait for Service<'_> {
         } else {
             Err(anyhow!("Could not get the content"))
         }
+    }
+}
+
+impl ServiceTrait for Service<'_> {
+    fn create_kakisute(&self, file_name: Option<String>) -> Result<String> {
+        let kakisute = KakisuteFile::new(file_name);
+        self.repository.edit(kakisute.file_name())?;
+        Ok(kakisute.file_name().to_string())
     }
 
     fn edit_by_index(&self, index: usize) -> Result<&str> {
@@ -103,17 +103,16 @@ impl ServiceTrait for Service<'_> {
         self.kakisute_list = KakisuteList::from_dir(self.repository.read_dir());
     }
 
-    fn get_kakisute_list(&self) -> Vec<KakisuteFile> {
-        self.kakisute_list.get_list()
+    fn get_kakisute_list(&self) -> KakisuteList {
+        self.kakisute_list.clone()
     }
 }
 
 pub trait ServiceTrait {
     fn create_kakisute(&self, file_name: Option<String>) -> Result<String>;
-    fn get_kakisute_by_index(&self, index: usize) -> Result<&KakisuteFile>;
     fn edit_by_index(&self, index: usize) -> Result<&str>;
     fn delete_by_index(&self, index: usize) -> Result<&str>;
     fn get_contetent_by_index(&self, index: usize) -> Result<String>;
     fn reload(&mut self);
-    fn get_kakisute_list(&self) -> Vec<KakisuteFile>;
+    fn get_kakisute_list(&self) -> KakisuteList;
 }
