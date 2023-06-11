@@ -1,4 +1,3 @@
-use crate::kakisute_file::KakisuteFile;
 use crate::ui::app_interactor::{AppInteractor, Mode};
 
 const DELETE_MODAL_BODY: &str = "Are you sure you want to delete? (Y/n)";
@@ -17,7 +16,7 @@ const HELP_TITLE: &str = "Help";
 pub struct DisplayData<'a> {
     pub index: Option<usize>,
     pub mode: &'a Mode,
-    pub kakisute_list: BlockData<&'a [KakisuteFile]>,
+    pub kakisute_list: BlockData<Vec<&'a str>>,
     pub content: BlockData<String>,
     pub new_file_name_modal: BlockData<&'a str>,
     pub help: BlockData<String>,
@@ -27,7 +26,7 @@ pub struct DisplayData<'a> {
 impl<'a> DisplayData<'a> {
     pub fn new(app_interactor: &'a AppInteractor) -> Self {
         let kakisute_list = DisplayData::create_kakisute_list(
-            app_interactor.get_kakisute_list(),
+            app_interactor.get_kakisute_file_name_list(),
             app_interactor.get_selected_index(),
         );
 
@@ -53,9 +52,9 @@ impl<'a> DisplayData<'a> {
     }
 
     fn create_kakisute_list(
-        kakisute_list: &'a [KakisuteFile],
+        kakisute_list: Vec<&str>,
         index: Option<usize>,
-    ) -> BlockData<&'a [KakisuteFile]> {
+    ) -> BlockData<Vec<&str>> {
         let title = if let Some(index) = index {
             format!(
                 "{} ({}/{})",
