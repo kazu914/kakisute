@@ -44,14 +44,14 @@ impl<'a> Service<'a> {
         self.edit_by_index(index)
     }
 
-    pub fn inspect_by_index(&self, index: usize) -> Result<String> {
-        let file_name = self.kakisute_list.get_file_name_by_index(index)?;
-        self.repository.get_path(file_name)
-    }
-
     pub fn inspect_by_query(&self, query: SingleQuery) -> Result<String> {
         let index = self.get_index_by_single_query(query);
         self.inspect_by_index(index)
+    }
+
+    fn inspect_by_index(&self, index: usize) -> Result<String> {
+        let file_name = self.kakisute_list.get_file_name_by_index(index)?;
+        self.repository.get_path(file_name)
     }
 
     fn get_index_by_single_query(&self, query: SingleQuery) -> usize {
