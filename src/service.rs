@@ -1,11 +1,13 @@
+use chrono::DateTime;
+use chrono::Local;
 use std::process;
 
-use anyhow::{anyhow, Ok, Result};
+use anyhow::{Ok, Result};
 
+use crate::datetime_helper::datetime_to_string;
 use crate::domain::kakisute::Kakisute;
 
 use self::interface::IRepository;
-use self::kakisute_file::KakisuteFile;
 use self::kakisute_list::{single_query::SingleQuery, KakisuteList};
 
 pub struct Service<'a> {
@@ -42,8 +44,8 @@ impl<'a> Service<'a> {
     }
 
     pub fn inspect_by_index(&self, index: usize) -> Result<String> {
-        let kakisute = self.get_kakisute_by_index(index)?;
-        self.repository.get_path(kakisute.file_name())
+        let file_name = self.kakisute_list.get_file_name_by_index(index)?;
+        self.repository.get_path(file_name)
     }
 
     pub fn inspect_by_query(&self, query: SingleQuery) -> Result<String> {
@@ -61,38 +63,39 @@ impl<'a> Service<'a> {
     }
 
     fn get_kakisute(&self, index: usize) -> Result<Kakisute> {
-        let kakisute_file = self.get_kakisute_by_index(index).unwrap();
-        let content = self.repository.get_content(kakisute_file.file_name())?;
+        let file_name = self.kakisute_list.get_file_name_by_index(index)?;
+        let content = self.repository.get_content(file_name)?;
         Ok(Kakisute::new(content))
     }
 
-    fn get_kakisute_by_index(&self, index: usize) -> Result<&KakisuteFile> {
-        let kakisute = self.kakisute_list.get(index);
-        if let Some(kakisute) = kakisute {
-            Ok(kakisute)
+    fn generate_file_name(date: DateTime<Local>, file_name: Option<String>) -> String {
+        let prefix = datetime_to_string(date);
+        if let Some(file_name) = file_name {
+            prefix + "_" + &file_name
         } else {
-            Err(anyhow!("Could not get the content"))
+            prefix + ".txt"
         }
     }
 }
 
 impl ServiceTrait for Service<'_> {
     fn create_kakisute(&self, file_name: Option<String>) -> Result<String> {
-        let kakisute = KakisuteFile::new(file_name);
-        self.repository.edit(kakisute.file_name())?;
-        Ok(kakisute.file_name().to_string())
+        let created_at = Local::now();
+        let file_name = Service::generate_file_name(created_at, file_name);
+        self.repository.edit(&file_name)?;
+        Ok(file_name)
     }
 
     fn edit_by_index(&self, index: usize) -> Result<&str> {
-        let kakisute = self.get_kakisute_by_index(index)?;
-        self.repository.edit(kakisute.file_name())?;
-        Ok(kakisute.file_name())
+        let file_name = self.kakisute_list.get_file_name_by_index(index)?;
+        self.repository.edit(file_name)?;
+        Ok(file_name)
     }
 
     fn delete_by_index(&self, index: usize) -> Result<&str> {
-        let kakisute = self.get_kakisute_by_index(index)?;
-        self.repository.delete(kakisute.file_name())?;
-        Ok(kakisute.file_name())
+        let file_name = self.kakisute_list.get_file_name_by_index(index)?;
+        self.repository.delete(file_name)?;
+        Ok(file_name)
     }
 
     fn get_contetent_by_index(&self, index: usize) -> Result<String> {
@@ -115,4 +118,30 @@ pub trait ServiceTrait {
     fn get_contetent_by_index(&self, index: usize) -> Result<String>;
     fn reload(&mut self);
     fn get_kakisute_list(&self) -> KakisuteList;
+}
+
+#[cfg(test)]
+extern crate speculate;
+#[cfg(test)]
+use speculate::speculate;
+
+#[cfg(test)]
+speculate! {
+    use chrono::TimeZone;
+    describe "generate_file_name" {
+
+        before {
+            let date = Local.ymd(2022,1,10).and_hms(16,30,15);;
+        }
+
+        it "joins datetime and given file_name" {
+            let file_name = Service::generate_file_name(date,Some("test.sql".to_string()));
+            assert_eq!(file_name,"2022_01_10_16_30_15_test.sql")
+        }
+
+        it "use only datetime if file_name is not given" {
+            let file_name = Service::generate_file_name(date,None);
+            assert_eq!(file_name,"2022_01_10_16_30_15.txt")
+        }
+    }
 }

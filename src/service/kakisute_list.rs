@@ -2,6 +2,7 @@ use crate::service::kakisute_file::KakisuteFile;
 use std::fs::ReadDir;
 mod selector;
 pub mod single_query;
+use anyhow::{Ok, Result};
 
 #[derive(Clone, Debug)]
 pub struct KakisuteList {
@@ -50,14 +51,14 @@ impl KakisuteList {
         self.files.push(file);
     }
 
-    pub fn get(&self, index: usize) -> Option<&KakisuteFile> {
-        self.files.get(index)
-    }
-
     pub fn get_kakisute_file_name_list(&self) -> Vec<&str> {
         self.files
             .iter()
             .map(|kakisute| kakisute.file_name())
             .collect()
+    }
+
+    pub fn get_file_name_by_index(&'_ self, index: usize) -> Result<&'_ str> {
+        Ok(self.files.get(index).unwrap().file_name())
     }
 }
