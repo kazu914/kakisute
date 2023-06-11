@@ -2,13 +2,11 @@ use std::process;
 
 use anyhow::{anyhow, Ok, Result};
 
-use crate::{
-    domain::kakisute::Kakisute,
-    kakisute_file::KakisuteFile,
-    kakisute_list::{single_query::SingleQuery, KakisuteList},
-};
+use crate::domain::kakisute::Kakisute;
 
 use self::interface::IRepository;
+use self::kakisute_file::KakisuteFile;
+use self::kakisute_list::{single_query::SingleQuery, KakisuteList};
 
 pub struct Service<'a> {
     kakisute_list: KakisuteList,
@@ -16,6 +14,8 @@ pub struct Service<'a> {
 }
 
 pub mod interface;
+pub mod kakisute_file;
+pub mod kakisute_list;
 
 impl<'a> Service<'a> {
     pub fn new(repository: &'a dyn IRepository) -> Self {

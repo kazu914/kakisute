@@ -1,6 +1,6 @@
 use std::usize;
 
-use crate::kakisute_file::KakisuteFile;
+use crate::service::kakisute_file::KakisuteFile;
 
 use super::{single_query::SingleQuery, KakisuteList};
 

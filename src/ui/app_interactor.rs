@@ -1,5 +1,4 @@
-use crate::kakisute_file::KakisuteFile;
-use crate::service::ServiceTrait;
+use crate::service::{kakisute_file::KakisuteFile, ServiceTrait};
 use crate::ui::list_index::ListIndex;
 use anyhow::Result;
 use std::result::Result::Ok;

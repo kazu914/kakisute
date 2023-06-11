@@ -3,9 +3,8 @@ use std::io::{self, Write};
 use clap::{AppSettings, CommandFactory, Parser, Subcommand};
 use clap_complete::{generate, Generator, Shell};
 use kakisute::{
-    kakisute_list,
     repository::Repository,
-    service::{Service, ServiceTrait},
+    service::{kakisute_list, Service, ServiceTrait},
     ui,
 };
 
