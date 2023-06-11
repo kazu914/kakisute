@@ -1,21 +1,21 @@
+use std::fs::ReadDir;
 use std::process;
 
 use anyhow::{anyhow, Ok, Result};
 
 use crate::{
+    domain::kakisute::Kakisute,
     kakisute_file::KakisuteFile,
     kakisute_list::{single_query::SingleQuery, KakisuteList},
-    repository::Repository,
 };
 
-pub struct Service {
+pub struct Service<'a> {
     kakisute_list: KakisuteList,
-    repository: Repository,
+    repository: &'a dyn RepositoryTrait,
 }
 
-impl Service {
-    pub fn new(data_dir_arg: Option<String>) -> Self {
-        let repository = Repository::new(data_dir_arg);
+impl<'a> Service<'a> {
+    pub fn new(repository: &'a dyn RepositoryTrait) -> Self {
         let kakisute_list = KakisuteList::from_dir(repository.read_dir());
         Service {
             kakisute_list,
@@ -56,9 +56,15 @@ impl Service {
                 process::exit(1)
             })
     }
+
+    fn get_kakisute(&self, index: usize) -> Result<Kakisute> {
+        let kakisute_file = self.get_kakisute_by_index(index).unwrap();
+        let content = self.repository.get_content(kakisute_file.file_name())?;
+        Ok(Kakisute::new(content))
+    }
 }
 
-impl ServiceTrait for Service {
+impl ServiceTrait for Service<'_> {
     fn create_kakisute(&self, file_name: Option<String>) -> Result<String> {
         let kakisute = KakisuteFile::new(file_name);
         self.repository.edit(kakisute.file_name())?;
@@ -87,9 +93,8 @@ impl ServiceTrait for Service {
     }
 
     fn get_contetent_by_index(&self, index: usize) -> Result<String> {
-        let kakisute = self.get_kakisute_by_index(index)?;
-        let content = self.repository.get_content(kakisute.file_name())?;
-        Ok(content)
+        let kakisute = self.get_kakisute(index)?;
+        Ok(kakisute.content())
     }
     fn reload(&mut self) {
         self.kakisute_list = KakisuteList::from_dir(self.repository.read_dir());
@@ -108,4 +113,12 @@ pub trait ServiceTrait {
     fn get_contetent_by_index(&self, index: usize) -> Result<String>;
     fn reload(&mut self);
     fn get_kakisute_list(&self) -> Vec<KakisuteFile>;
+}
+
+pub trait RepositoryTrait {
+    fn read_dir(&self) -> ReadDir;
+    fn edit(&self, file_name: &str) -> Result<()>;
+    fn get_path(&self, file_name: &str) -> Result<String>;
+    fn delete(&self, file_name: &str) -> Result<()>;
+    fn get_content(&self, file_name: &str) -> Result<String>;
 }

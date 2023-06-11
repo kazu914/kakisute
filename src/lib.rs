@@ -1,3 +1,4 @@
+pub mod domain;
 pub mod kakisute_file;
 pub mod kakisute_list;
 pub mod repository;

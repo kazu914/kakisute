@@ -4,6 +4,7 @@ use clap::{AppSettings, CommandFactory, Parser, Subcommand};
 use clap_complete::{generate, Generator, Shell};
 use kakisute::{
     kakisute_list,
+    repository::Repository,
     service::{Service, ServiceTrait},
     ui,
 };
@@ -71,8 +72,8 @@ enum Action {
 
 fn main() -> anyhow::Result<()> {
     let cli = Args::parse();
-
-    let mut service = Service::new(cli.data_dir);
+    let repository = Repository::new(cli.data_dir);
+    let mut service = Service::new(&repository);
 
     match cli.action {
         Action::New { kakisute_name } => {
