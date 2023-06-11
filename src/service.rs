@@ -1,4 +1,3 @@
-use std::fs::ReadDir;
 use std::process;
 
 use anyhow::{anyhow, Ok, Result};
@@ -9,13 +8,17 @@ use crate::{
     kakisute_list::{single_query::SingleQuery, KakisuteList},
 };
 
+use self::interface::IRepository;
+
 pub struct Service<'a> {
     kakisute_list: KakisuteList,
-    repository: &'a dyn RepositoryTrait,
+    repository: &'a dyn IRepository,
 }
 
+pub mod interface;
+
 impl<'a> Service<'a> {
-    pub fn new(repository: &'a dyn RepositoryTrait) -> Self {
+    pub fn new(repository: &'a dyn IRepository) -> Self {
         let kakisute_list = KakisuteList::from_dir(repository.read_dir());
         Service {
             kakisute_list,
@@ -113,12 +116,4 @@ pub trait ServiceTrait {
     fn get_contetent_by_index(&self, index: usize) -> Result<String>;
     fn reload(&mut self);
     fn get_kakisute_list(&self) -> Vec<KakisuteFile>;
-}
-
-pub trait RepositoryTrait {
-    fn read_dir(&self) -> ReadDir;
-    fn edit(&self, file_name: &str) -> Result<()>;
-    fn get_path(&self, file_name: &str) -> Result<String>;
-    fn delete(&self, file_name: &str) -> Result<()>;
-    fn get_content(&self, file_name: &str) -> Result<String>;
 }

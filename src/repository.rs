@@ -2,7 +2,7 @@ use std::fs::{self, ReadDir};
 
 use anyhow::{Context, Ok, Result};
 
-use crate::service::RepositoryTrait;
+use crate::service::interface::IRepository;
 
 use self::data_dir::DataDir;
 
@@ -19,7 +19,7 @@ impl Repository {
     }
 }
 
-impl RepositoryTrait for Repository {
+impl IRepository for Repository {
     fn edit(&self, file_name: &str) -> Result<()> {
         let file_path = &self.data_dir.join(file_name);
         scrawl::edit(file_path).with_context(|| format!("Failed to edit {}", file_name))?;
