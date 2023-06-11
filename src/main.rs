@@ -4,7 +4,7 @@ use clap::{AppSettings, CommandFactory, Parser, Subcommand};
 use clap_complete::{generate, Generator, Shell};
 use kakisute::{
     repository::Repository,
-    service::{kakisute_list, Service, ServiceTrait},
+    service::{Service, ServiceTrait},
     ui,
 };
 
@@ -92,7 +92,7 @@ fn main() -> anyhow::Result<()> {
             is_latest,
             kakisute_name,
         } => {
-            let query = kakisute_list::single_query::SingleQuery::new(is_latest, kakisute_name);
+            let query = kakisute::service::search_query::SingleQuery::new(is_latest, kakisute_name);
             let edited_kakisute_name = service.edit_by_single_query(query)?;
             println!("Edited: {}", edited_kakisute_name);
         }
@@ -100,7 +100,7 @@ fn main() -> anyhow::Result<()> {
             is_latest,
             kakisute_name,
         } => {
-            let query = kakisute_list::single_query::SingleQuery::new(is_latest, kakisute_name);
+            let query = kakisute::service::search_query::SingleQuery::new(is_latest, kakisute_name);
             let content = service.get_content_by_single_query(query)?;
             println!("{}", content);
         }
@@ -108,7 +108,7 @@ fn main() -> anyhow::Result<()> {
             is_latest,
             kakisute_name,
         } => {
-            let query = kakisute_list::single_query::SingleQuery::new(is_latest, kakisute_name);
+            let query = kakisute::service::search_query::SingleQuery::new(is_latest, kakisute_name);
             let info = service.inspect_by_query(query)?;
             println!("{}", info);
         }
@@ -116,7 +116,7 @@ fn main() -> anyhow::Result<()> {
             is_latest,
             kakisute_name,
         } => {
-            let query = kakisute_list::single_query::SingleQuery::new(is_latest, kakisute_name);
+            let query = kakisute::service::search_query::SingleQuery::new(is_latest, kakisute_name);
             let deleted_kakisute_name = service.delete_by_single_query(query)?;
             println!("Deleted: {}", deleted_kakisute_name);
         }

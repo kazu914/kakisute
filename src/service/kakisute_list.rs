@@ -1,8 +1,9 @@
-use crate::service::kakisute_file::KakisuteFile;
-use std::fs::ReadDir;
-mod selector;
-pub mod single_query;
 use anyhow::{Ok, Result};
+use kakisute_file::KakisuteFile;
+use std::fs::ReadDir;
+
+use super::search_query::SingleQuery;
+mod kakisute_file;
 
 #[derive(Clone, Debug)]
 pub struct KakisuteList {
@@ -60,5 +61,31 @@ impl KakisuteList {
 
     pub fn get_file_name_by_index(&'_ self, index: usize) -> Result<&'_ str> {
         Ok(self.files.get(index).unwrap().file_name())
+    }
+
+    pub fn get_matching_index(&self, query: SingleQuery) -> Option<usize> {
+        let is_latest = query.is_latest;
+        let file_name = query.file_name;
+        match file_name {
+            Some(file_name) => self.get_index_by_file_name(&file_name),
+            None => {
+                if is_latest {
+                    Some(self.get_last_index())
+                } else {
+                    println!("File name or \"--latest\" flag is required.");
+                    None
+                }
+            }
+        }
+    }
+
+    fn get_index_by_file_name(&self, file_name: &str) -> Option<usize> {
+        self.files
+            .iter()
+            .position(|file| file.file_name() == file_name)
+    }
+
+    fn get_last_index(&self) -> usize {
+        self.files.len() - 1
     }
 }

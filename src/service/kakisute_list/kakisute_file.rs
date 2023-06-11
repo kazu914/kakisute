@@ -1,4 +1,4 @@
-use crate::datetime_helper::string_to_datetime;
+pub use crate::datetime_helper::string_to_datetime;
 use std::path::Path;
 
 use chrono::{DateTime, Local};

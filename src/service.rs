@@ -8,7 +8,8 @@ use crate::datetime_helper::datetime_to_string;
 use crate::domain::kakisute::Kakisute;
 
 use self::interface::IRepository;
-use self::kakisute_list::{single_query::SingleQuery, KakisuteList};
+use self::kakisute_list::KakisuteList;
+use self::search_query::SingleQuery;
 
 pub struct Service<'a> {
     kakisute_list: KakisuteList,
@@ -16,8 +17,8 @@ pub struct Service<'a> {
 }
 
 pub mod interface;
-pub mod kakisute_file;
 pub mod kakisute_list;
+pub mod search_query;
 
 impl<'a> Service<'a> {
     pub fn new(repository: &'a dyn IRepository) -> Self {
