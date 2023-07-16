@@ -59,6 +59,9 @@ enum Action {
         kakisute_name: Option<String>,
     },
 
+    /// Search kakisute
+    Search { query: String },
+
     /// Start TUI mode
     Interact {},
 
@@ -119,6 +122,9 @@ fn main() -> anyhow::Result<()> {
             let query = kakisute::service::search_query::SingleQuery::new(is_latest, kakisute_name);
             let deleted_kakisute_name = service.delete_by_single_query(query)?;
             println!("Deleted: {}", deleted_kakisute_name);
+        }
+        Action::Search { query } => {
+            service.search_cli(&query)?;
         }
         Action::Interact {} => {
             let _ = ui::index::run_app(&mut service);
