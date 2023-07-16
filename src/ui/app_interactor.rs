@@ -70,7 +70,7 @@ impl<'a> AppInteractor<'a> {
     pub fn get_selected_kakisute_content(&self) -> Option<String> {
         let index = self.selected_list_index.get_index();
         if let Ok(index) = index {
-            self.service.get_contetent_by_index(index).ok()
+            self.service.get_content_by_index(index).ok()
         } else {
             None
         }
@@ -140,19 +140,19 @@ impl<'a> AppInteractor<'a> {
 use speculate::speculate;
 
 #[cfg(test)]
-struct ServieMock {
+struct ServiceMock {
     kakisute_list: KakisuteList,
 }
 
 #[cfg(test)]
-impl ServieMock {
+impl ServiceMock {
     fn new(kakisute_list: KakisuteList) -> Self {
-        ServieMock { kakisute_list }
+        ServiceMock { kakisute_list }
     }
 }
 
 #[cfg(test)]
-impl ServiceTrait for ServieMock {
+impl ServiceTrait for ServiceMock {
     fn create_kakisute(&self, _: Option<String>) -> Result<String> {
         Ok("Ok".to_string())
     }
@@ -162,7 +162,7 @@ impl ServiceTrait for ServieMock {
     fn delete_by_index(&self, _: usize) -> Result<&str> {
         Ok("ok")
     }
-    fn get_contetent_by_index(&self, _: usize) -> Result<String> {
+    fn get_content_by_index(&self, _: usize) -> Result<String> {
         Ok("Ok".to_string())
     }
 
@@ -177,7 +177,7 @@ impl ServiceTrait for ServieMock {
 speculate! {
     describe "empty app_interactor" {
         before {
-            let mut service = ServieMock::new(KakisuteList::new());
+            let mut service = ServiceMock::new(KakisuteList::new());
             let app_interactor = AppInteractor::new(&mut service);
         }
 
@@ -224,7 +224,7 @@ speculate! {
 
     describe "app_interactor mode function" {
         before {
-            let mut service = ServieMock::new(KakisuteList::new());
+            let mut service = ServiceMock::new(KakisuteList::new());
             let mut app_interactor = AppInteractor::new(&mut service);
         }
 

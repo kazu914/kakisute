@@ -51,7 +51,7 @@ speculate! {
             assert_eq!(actual.single(),Some(expected));
         }
 
-        it "return none when file_name is shorter than fomrat" {
+        it "return none when file_name is shorter than format" {
             let given = "2022_01_10_16_30";
             let actual = string_to_datetime(given);
 

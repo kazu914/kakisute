@@ -128,7 +128,7 @@ speculate! {
     }
 
     describe "create_content" {
-        it "return conetent when exist" {
+        it "return content when exist" {
             let res = DisplayData::create_content(Some("content".to_string()));
             assert_eq!(res.body, "content")
         }

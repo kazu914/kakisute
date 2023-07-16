@@ -36,7 +36,7 @@ impl<'a> Service<'a> {
 
     pub fn get_content_by_single_query(&self, query: SingleQuery) -> Result<String> {
         let index = self.get_index_by_single_query(query);
-        self.get_contetent_by_index(index)
+        self.get_content_by_index(index)
     }
 
     pub fn edit_by_single_query(&self, query: SingleQuery) -> Result<&str> {
@@ -99,7 +99,7 @@ impl ServiceTrait for Service<'_> {
         Ok(file_name)
     }
 
-    fn get_contetent_by_index(&self, index: usize) -> Result<String> {
+    fn get_content_by_index(&self, index: usize) -> Result<String> {
         let kakisute = self.get_kakisute(index)?;
         Ok(kakisute.content())
     }
@@ -116,7 +116,7 @@ pub trait ServiceTrait {
     fn create_kakisute(&self, file_name: Option<String>) -> Result<String>;
     fn edit_by_index(&self, index: usize) -> Result<&str>;
     fn delete_by_index(&self, index: usize) -> Result<&str>;
-    fn get_contetent_by_index(&self, index: usize) -> Result<String>;
+    fn get_content_by_index(&self, index: usize) -> Result<String>;
     fn reload(&mut self);
     fn get_kakisute_list(&self) -> KakisuteList;
 }
