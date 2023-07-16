@@ -1,8 +1,15 @@
 use chrono::DateTime;
 use chrono::Local;
+use grep::cli;
+use grep::printer::{ColorSpecs, StandardBuilder};
+use grep::regex::RegexMatcher;
 use std::process;
 
 use anyhow::{Ok, Result};
+use core::result::Result::Ok as CoreOk;
+use grep::searcher::Searcher;
+use termcolor::ColorChoice;
+use walkdir::WalkDir;
 
 use crate::datetime_helper::datetime_to_string;
 use crate::domain::kakisute::Kakisute;
@@ -76,6 +83,43 @@ impl<'a> Service<'a> {
         } else {
             prefix + ".txt"
         }
+    }
+    pub fn search_cli(&self, word: &str) -> Result<()> {
+        let matcher = RegexMatcher::new(word)?;
+        let mut searcher = Searcher::new();
+        let mut printer = StandardBuilder::new()
+            .color_specs(ColorSpecs::default_with_color())
+            .build(cli::stdout(if cli::is_tty_stdout() {
+                ColorChoice::Auto
+            } else {
+                ColorChoice::Never
+            }));
+
+        for file_name in self.kakisute_list.get_kakisute_file_name_list() {
+            let path = self.repository.get_path(file_name)?;
+            for result in WalkDir::new(path) {
+                let dent = match result {
+                    CoreOk(dent) => dent,
+                    Err(err) => {
+                        eprintln!("{}", err);
+                        continue;
+                    }
+                };
+                if !dent.file_type().is_file() {
+                    continue;
+                }
+                let result = searcher.search_path(
+                    &matcher,
+                    dent.path(),
+                    printer.sink_with_path(&matcher, dent.path()),
+                );
+                if let Err(err) = result {
+                    eprintln!("{}: {}", dent.path().display(), err);
+                }
+            }
+        }
+
+        Ok(())
     }
 }
 
