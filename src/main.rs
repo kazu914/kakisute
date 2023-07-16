@@ -3,8 +3,9 @@ use std::io::{self, Write};
 use clap::{AppSettings, CommandFactory, Parser, Subcommand};
 use clap_complete::{generate, Generator, Shell};
 use kakisute::{
-    app::{App, AppTrait},
-    kakisute_list, ui,
+    repository::Repository,
+    service::{Service, ServiceTrait},
+    ui,
 };
 
 #[derive(Parser, Debug)]
@@ -30,7 +31,7 @@ enum Action {
     /// Print kakisute list
     List {},
 
-    /// Edit kakiste
+    /// Edit kakisute
     Edit {
         #[clap(long = "latest")]
         is_latest: bool,
@@ -58,6 +59,9 @@ enum Action {
         kakisute_name: Option<String>,
     },
 
+    /// Search kakisute
+    Search { query: String },
+
     /// Start TUI mode
     Interact {},
 
@@ -70,57 +74,60 @@ enum Action {
 
 fn main() -> anyhow::Result<()> {
     let cli = Args::parse();
-
-    let mut app = App::new(cli.data_dir);
+    let repository = Repository::new(cli.data_dir);
+    let mut service = Service::new(&repository);
 
     match cli.action {
         Action::New { kakisute_name } => {
-            let created_kakisute_name = app.create_kakisute(kakisute_name)?;
+            let created_kakisute_name = service.create_kakisute(kakisute_name)?;
             println!("Created: {}", created_kakisute_name);
         }
         Action::List {} => {
-            let kakisute_list = app.get_kakisute_list();
+            let kakisute_list = service.get_kakisute_list();
 
             let stdout = io::stdout();
             let mut handle = io::BufWriter::new(stdout);
-            for kakisute in kakisute_list {
-                writeln!(handle, "{}", kakisute.file_name()).unwrap();
+            for file_name in kakisute_list.get_kakisute_file_name_list() {
+                writeln!(handle, "{}", file_name).ok();
             }
         }
         Action::Edit {
             is_latest,
             kakisute_name,
         } => {
-            let query = kakisute_list::single_query::SingleQuery::new(is_latest, kakisute_name);
-            let edited_kakisute_name = app.edit_by_single_query(query)?;
+            let query = kakisute::service::search_query::SingleQuery::new(is_latest, kakisute_name);
+            let edited_kakisute_name = service.edit_by_single_query(query)?;
             println!("Edited: {}", edited_kakisute_name);
         }
         Action::Show {
             is_latest,
             kakisute_name,
         } => {
-            let query = kakisute_list::single_query::SingleQuery::new(is_latest, kakisute_name);
-            let content = app.get_content_by_single_query(query)?;
+            let query = kakisute::service::search_query::SingleQuery::new(is_latest, kakisute_name);
+            let content = service.get_content_by_single_query(query)?;
             println!("{}", content);
         }
         Action::Inspect {
             is_latest,
             kakisute_name,
         } => {
-            let query = kakisute_list::single_query::SingleQuery::new(is_latest, kakisute_name);
-            let info = app.inspect_by_query(query)?;
+            let query = kakisute::service::search_query::SingleQuery::new(is_latest, kakisute_name);
+            let info = service.inspect_by_query(query)?;
             println!("{}", info);
         }
         Action::Delete {
             is_latest,
             kakisute_name,
         } => {
-            let query = kakisute_list::single_query::SingleQuery::new(is_latest, kakisute_name);
-            let deleted_kakisute_name = app.delete_by_single_query(query)?;
+            let query = kakisute::service::search_query::SingleQuery::new(is_latest, kakisute_name);
+            let deleted_kakisute_name = service.delete_by_single_query(query)?;
             println!("Deleted: {}", deleted_kakisute_name);
         }
+        Action::Search { query } => {
+            service.search_cli(&query)?;
+        }
         Action::Interact {} => {
-            let _ = ui::index::run_app(&mut app);
+            let _ = ui::index::run_app(&mut service);
         }
         Action::Completion { shell } => {
             print_completer(shell);

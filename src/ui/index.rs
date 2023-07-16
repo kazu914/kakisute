@@ -2,13 +2,13 @@ use super::app_interactor::{AppInteractor, Mode};
 use super::display_data::DisplayData;
 use super::renderer::{HELP_BOX_LENGTH, MARGIN};
 use super::terminal_manager::{TerminalManage, TerminalManager};
-use crate::app::AppTrait;
+use crate::service::ServiceTrait;
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use std::io;
 use tui::{backend::CrosstermBackend, Terminal};
 
-pub fn run_app(app: &mut dyn AppTrait) -> Result<()> {
+pub fn run_app(app: &mut dyn ServiceTrait) -> Result<()> {
     let mut app_interactor = AppInteractor::new(app);
     let stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
