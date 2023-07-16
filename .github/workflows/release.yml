@@ -8,7 +8,7 @@ jobs:
     name: Release binary
     strategy:
       matrix:
-        include:
+        platform:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: kakisute
@@ -17,21 +17,17 @@ jobs:
             target: x86_64-apple-darwin
             artifact_name: kakisute
             asset_name: kakisute-x86_64-apple-darwin
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.platform.os }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+        uses: actions/checkout@v3
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v0
         with:
-          toolchain: stable
-          override: true
-      - name: Cross build with all features
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: build
-          args: --release --target ${{ matrix.target }} --all-features --verbose
+          command: ${{ matrix.platform.command }}
+          target: ${{ matrix.platform.target }}
+          args: "--locked --release --all-features --verbose"
+          strip: true
       - name: Make tarball
         run: tar -zcvf ${{ matrix.asset_name }}.tar.gz -C target/${{ matrix.target }}/release ${{ matrix.artifact_name }}
       - name: Upload binaries to release
