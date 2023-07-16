@@ -31,7 +31,7 @@ enum Action {
     /// Print kakisute list
     List {},
 
-    /// Edit kakiste
+    /// Edit kakisute
     Edit {
         #[clap(long = "latest")]
         is_latest: bool,
