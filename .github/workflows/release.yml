@@ -31,7 +31,7 @@ jobs:
       - name: Make tarball
         run: tar -zcvf ${{ matrix.platform.asset_name }}.tar.gz -C target/${{ matrix.platform.target }}/release ${{ matrix.platform.artifact_name }}
       - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@2.1.1
+        uses: svenstaro/upload-release-action@2.7.0
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: target/${{ matrix.platform.target }}/release/${{ matrix.platform.artifact_name }}
@@ -39,7 +39,7 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
       - name: Upload tarballs to release
-        uses: svenstaro/upload-release-action@2.1.1
+        uses: svenstaro/upload-release-action@2.7.0
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ matrix.platform.asset_name }}.tar.gz
