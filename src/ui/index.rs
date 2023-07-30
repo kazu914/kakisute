@@ -46,24 +46,24 @@ fn handle_input(
     match app_interactor.get_mode() {
         Mode::Insert => match (key_code, key_modifier) {
             (KeyCode::Esc, KeyModifiers::NONE) => {
-                app_interactor.clear_file_name();
+                app_interactor.clear_user_input();
                 app_interactor.enter_normal_mode();
             }
             (KeyCode::Char(c), KeyModifiers::NONE) => {
-                app_interactor.push_to_file_name(c);
+                app_interactor.push_user_input(c);
             }
             (KeyCode::Char(c), KeyModifiers::SHIFT) => {
-                app_interactor.push_to_file_name(c);
+                app_interactor.push_user_input(c);
             }
             (KeyCode::Backspace, KeyModifiers::NONE) => {
-                app_interactor.pop_from_file_name();
+                app_interactor.pop_user_input();
             }
             (KeyCode::Enter, KeyModifiers::NONE) => {
                 terminal_manager.exit_app_screen()?;
                 app_interactor.create_new_kakisute_with_file_name()?;
                 terminal_manager.enter_app_screen()?;
                 app_interactor.reload();
-                app_interactor.clear_file_name();
+                app_interactor.clear_user_input();
             }
             _ => {}
         },
@@ -109,6 +109,9 @@ fn handle_input(
             (KeyCode::Char('d'), KeyModifiers::NONE) => {
                 app_interactor.enter_delete_mode();
             }
+            (KeyCode::Char('/'), KeyModifiers::NONE) => {
+                app_interactor.enter_search_mode();
+            }
             _ => {}
         },
         Mode::DeleteConfirm => match (key_code, key_modifier) {
@@ -118,6 +121,25 @@ fn handle_input(
             (KeyCode::Char('Y'), KeyModifiers::SHIFT) => {
                 app_interactor.delete_kakisute()?;
                 app_interactor.reload();
+            }
+            _ => {}
+        },
+        Mode::Search => match (key_code, key_modifier) {
+            (KeyCode::Enter, KeyModifiers::NONE) | (KeyCode::Esc, KeyModifiers::NONE) => {
+                app_interactor.clear_user_input();
+                app_interactor.enter_normal_mode();
+            }
+            (KeyCode::Char(c), KeyModifiers::NONE) => {
+                app_interactor.push_user_input(c);
+                app_interactor.filter();
+            }
+            (KeyCode::Char(c), KeyModifiers::SHIFT) => {
+                app_interactor.push_user_input(c);
+                app_interactor.filter();
+            }
+            (KeyCode::Backspace, KeyModifiers::NONE) => {
+                app_interactor.pop_user_input();
+                app_interactor.filter();
             }
             _ => {}
         },

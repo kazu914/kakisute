@@ -9,13 +9,14 @@ pub enum Mode {
     Normal,
     Insert,
     DeleteConfirm,
+    Search,
 }
 
 pub struct AppInteractor<'a> {
     selected_list_index: ListIndex,
     items: KakisuteList,
     mode: Mode,
-    new_file_name: String,
+    user_input: String,
     exit: bool,
     service: &'a mut dyn ServiceTrait,
 }
@@ -28,7 +29,7 @@ impl<'a> AppInteractor<'a> {
             selected_list_index: index,
             items: kakisute_list,
             mode: Mode::Normal,
-            new_file_name: String::new(),
+            user_input: String::new(),
             exit: false,
             service,
         }
@@ -42,6 +43,9 @@ impl<'a> AppInteractor<'a> {
         self.items = kakisute_file_list;
         self.mode = Mode::Normal;
     }
+
+    pub fn filter(&mut self) {}
+
     pub fn enter_insert_mode(&mut self) {
         self.mode = Mode::Insert;
     }
@@ -50,6 +54,9 @@ impl<'a> AppInteractor<'a> {
     }
     pub fn enter_delete_mode(&mut self) {
         self.mode = Mode::DeleteConfirm;
+    }
+    pub fn enter_search_mode(&mut self) {
+        self.mode = Mode::Search;
     }
     pub fn select_next(&mut self) {
         self.selected_list_index.increment();
@@ -63,8 +70,8 @@ impl<'a> AppInteractor<'a> {
     pub fn select_previous_n(&mut self, n: u16) {
         self.selected_list_index.decrement_n(n);
     }
-    pub fn clear_file_name(&mut self) {
-        self.new_file_name = String::new();
+    pub fn clear_user_input(&mut self) {
+        self.user_input = String::new();
     }
 
     pub fn get_selected_kakisute_content(&self) -> Option<String> {
@@ -84,7 +91,7 @@ impl<'a> AppInteractor<'a> {
 
     pub fn create_new_kakisute_with_file_name(&self) -> Result<()> {
         self.service
-            .create_kakisute(Some(self.new_file_name.clone()))?;
+            .create_kakisute(Some(self.user_input.clone()))?;
         Ok(())
     }
 
@@ -115,16 +122,16 @@ impl<'a> AppInteractor<'a> {
         &self.mode
     }
 
-    pub fn get_file_name(&self) -> &str {
-        &self.new_file_name
+    pub fn get_user_input(&self) -> &str {
+        &self.user_input
     }
 
-    pub fn push_to_file_name(&mut self, c: char) {
-        self.new_file_name.push(c)
+    pub fn push_user_input(&mut self, c: char) {
+        self.user_input.push(c)
     }
 
-    pub fn pop_from_file_name(&mut self) {
-        self.new_file_name.pop();
+    pub fn pop_user_input(&mut self) {
+        self.user_input.pop();
     }
 
     pub fn exit(&mut self) {
@@ -213,8 +220,8 @@ speculate! {
             assert_eq!(app_interactor.mode, Mode::Normal)
         }
 
-        it "should start with empty file name" {
-            assert_eq!(app_interactor.new_file_name, "")
+        it "should start with empty user input" {
+            assert_eq!(app_interactor.user_input, "")
         }
 
         it "should start with exit false" {

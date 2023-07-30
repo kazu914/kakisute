@@ -6,11 +6,14 @@ const KAKISUTE_LIST_TITLE: &str = "List";
 const NO_FILE_BODY: &str = "<No file is selected>";
 const CONTENT_TITLE: &str = "Content";
 const NEW_FILE_NAME_MODAL_TITLE: &str = "Input new file name";
+const SEARCH_MODAL_TITLE: &str = "Input search query";
+const MODAL_TITLE_DEFAULT: &str = "Input";
 const HELP_NORMAL_BODY: &str =
     "esc/q: Quit, j: Down, k: Up, ^d: Down 1/2 screen, ^u: Up 1/2 screen, e: Edit, n: Create new, N: Create new with file name, d: Delete";
 
 const HELP_INSERT_BODY: &str = "esc: Enter normal mode, Enter: Open editor";
 const HELP_DELETE_BODY: &str = "esc/n: Cancel, Y: delete";
+const HELP_SEARCH_BODY: &str = "esc/n: Cancel, Y: delete";
 const HELP_TITLE: &str = "Help";
 
 pub struct DisplayData<'a> {
@@ -18,7 +21,7 @@ pub struct DisplayData<'a> {
     pub mode: &'a Mode,
     pub kakisute_list: BlockData<Vec<&'a str>>,
     pub content: BlockData<String>,
-    pub new_file_name_modal: BlockData<&'a str>,
+    pub user_input: BlockData<&'a str>,
     pub help: BlockData<String>,
     pub delete_modal: BlockData<&'a str>,
 }
@@ -34,7 +37,10 @@ impl<'a> DisplayData<'a> {
 
         let content = DisplayData::create_content(kakisute_content);
 
-        let new_file_name = DisplayData::create_new_file_name_modal(app_interactor.get_file_name());
+        let user_input = DisplayData::create_user_input_modal(
+            app_interactor.get_user_input(),
+            app_interactor.get_mode(),
+        );
 
         let help = DisplayData::create_help(app_interactor.get_mode());
 
@@ -45,7 +51,7 @@ impl<'a> DisplayData<'a> {
             mode: app_interactor.get_mode(),
             kakisute_list,
             content,
-            new_file_name_modal: new_file_name,
+            user_input,
             help,
             delete_modal,
         }
@@ -76,8 +82,15 @@ impl<'a> DisplayData<'a> {
         BlockData::new(content_body, CONTENT_TITLE)
     }
 
-    fn create_new_file_name_modal(new_file_name: &'a str) -> BlockData<&'a str> {
-        BlockData::new(new_file_name, NEW_FILE_NAME_MODAL_TITLE)
+    fn create_user_input_modal(user_input: &'a str, mode: &Mode) -> BlockData<&'a str> {
+        BlockData::new(
+            user_input,
+            match mode {
+                Mode::Insert => NEW_FILE_NAME_MODAL_TITLE,
+                Mode::Search => SEARCH_MODAL_TITLE,
+                _ => MODAL_TITLE_DEFAULT,
+            },
+        )
     }
 
     fn create_help(mode: &Mode) -> BlockData<String> {
@@ -85,6 +98,7 @@ impl<'a> DisplayData<'a> {
             Mode::Normal => HELP_NORMAL_BODY,
             Mode::Insert => HELP_INSERT_BODY,
             Mode::DeleteConfirm => HELP_DELETE_BODY,
+            Mode::Search => HELP_SEARCH_BODY,
         }
         .to_string();
         BlockData::new(help_body, HELP_TITLE)
