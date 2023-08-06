@@ -1,9 +1,10 @@
 use crate::service::ServiceTrait;
 use crate::ui::filtered_list::FilteredList;
 use anyhow::Result;
+use std::collections::HashMap;
 use std::result::Result::Ok;
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub enum Mode {
     Normal,
     Insert,
@@ -17,29 +18,49 @@ pub struct AppInteractor<'a> {
     exit: bool,
     service: &'a dyn ServiceTrait,
     filtered_list: FilteredList,
+    cached_content: HashMap<String, String>,
+    kakisute_name_list: Vec<String>,
 }
 
 impl<'a> AppInteractor<'a> {
     pub fn new(service: &'a dyn ServiceTrait) -> Self {
-        let filtered_list = FilteredList::new(service);
+        let kakisute_name_list = service.get_kakisute_list();
+        let filtered_list = FilteredList::new(kakisute_name_list.len());
         AppInteractor {
             mode: Mode::Normal,
             user_input: String::new(),
             exit: false,
             service,
             filtered_list,
+            kakisute_name_list,
+            cached_content: HashMap::new(),
         }
     }
 
-    pub fn reload(&mut self) {
+    fn load_all_kakisute(&mut self) {
+        for i in 0..self.kakisute_name_list.len() {
+            self.load_kakisute_content(i);
+        }
+    }
+
+    pub fn reload(&mut self) -> Result<()> {
         self.service.reload();
-        let filtered_list = FilteredList::new(self.service);
+        self.kakisute_name_list = self.service.get_kakisute_list();
+        self.filtered_list = FilteredList::new(self.kakisute_name_list.len());
         self.mode = Mode::Normal;
-        self.filtered_list = filtered_list;
+        self.cached_content = HashMap::new();
+        Ok(())
     }
 
     pub fn filter(&mut self) -> Result<()> {
-        self.filtered_list.filter(&self.user_input)
+        self.load_all_kakisute();
+        self.filtered_list.filter(
+            &self.user_input,
+            self.kakisute_name_list
+                .iter()
+                .map(|s| s.to_owned() + self.cached_content.get(s).unwrap().as_str())
+                .collect::<Vec<String>>(),
+        )
     }
 
     pub fn enter_mode(&mut self, mode: Mode) {
@@ -59,23 +80,35 @@ impl<'a> AppInteractor<'a> {
         self.filtered_list.select_previous_n(n);
     }
 
-    pub fn get_selected_index(&self) -> Option<usize> {
-        self.filtered_list.get_index().ok()
-    }
     pub fn clear_user_input(&mut self) {
         self.user_input.clear();
     }
 
-    pub fn get_selected_kakisute_content(&self) -> Option<String> {
-        self.filtered_list
-            .get_index()
-            .and_then(|index| self.service.get_content_by_index(index))
-            .ok()
+    pub fn get_selected_kakisute_content(&mut self) -> Option<String> {
+        let index = self.filtered_list.get_original_index().ok()?;
+        self.load_kakisute_content(index)
+    }
+
+    fn load_kakisute_content(&mut self, index: usize) -> Option<String> {
+        // cached_content にあればそれを返す
+        let kakisute_name = self.kakisute_name_list.get(index)?;
+        let cached_content = self.cached_content.get(kakisute_name);
+        if let Some(content) = cached_content {
+            return Some(content.clone());
+        }
+
+        // なければ service から取得して返す
+        let content = self.service.get_content_by_index(index).ok();
+        if let Some(content) = &content {
+            self.cached_content
+                .insert(kakisute_name.clone(), content.clone());
+        }
+        content
     }
 
     pub fn edit_kakisute(&self) -> Result<String> {
         self.filtered_list
-            .get_index()
+            .get_original_index()
             .and_then(|index| self.service.edit_by_index(index))
     }
 
@@ -91,7 +124,7 @@ impl<'a> AppInteractor<'a> {
 
     pub fn delete_kakisute(&self) -> Result<String> {
         self.filtered_list
-            .get_index()
+            .get_original_index()
             .and_then(|index| self.service.delete_by_index(index))
     }
 
@@ -99,16 +132,8 @@ impl<'a> AppInteractor<'a> {
         self.filtered_list.is_some()
     }
 
-    pub fn get_kakisute_file_name_list(&self) -> Vec<&str> {
-        self.filtered_list.get_kakisute_file_name_list()
-    }
-
     pub fn get_mode(&self) -> &Mode {
         &self.mode
-    }
-
-    pub fn get_user_input(&self) -> &str {
-        &self.user_input
     }
 
     pub fn push_user_input(&mut self, c: char) {
@@ -126,6 +151,20 @@ impl<'a> AppInteractor<'a> {
     pub fn is_exited(&self) -> bool {
         self.exit
     }
+
+    pub fn generate_info(&mut self) -> Info {
+        let content = self.get_selected_kakisute_content();
+        let kakisute_name_list = self.filtered_list.get_kakisute_file_name_list(
+            self.kakisute_name_list.iter().map(|s| s.as_str()).collect(),
+        );
+        Info {
+            index: self.filtered_list.get_index().ok(),
+            mode: self.mode,
+            kakisute_list: kakisute_name_list,
+            content,
+            user_input: &self.user_input,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -133,6 +172,8 @@ use speculate::speculate;
 
 #[cfg(test)]
 use crate::service::kakisute_list::KakisuteList;
+
+use super::display_data::Info;
 
 #[cfg(test)]
 struct ServiceMock {
@@ -173,7 +214,7 @@ speculate! {
     describe "empty app_interactor" {
         before {
             let mut service = ServiceMock::new(KakisuteList::new());
-            let app_interactor = AppInteractor::new(&mut service);
+            let mut app_interactor = AppInteractor::new(&mut service);
         }
 
         it "return error if edit is called" {

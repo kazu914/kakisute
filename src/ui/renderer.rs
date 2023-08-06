@@ -52,7 +52,7 @@ fn build_main_layout<B: Backend>(f: &mut Frame<B>, mode: &Mode) -> Vec<Rect> {
 }
 
 pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
-    let chunks = build_main_layout(f, display_data.mode);
+    let chunks = build_main_layout(f, &display_data.mode);
     let content_chunk = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(
@@ -68,7 +68,7 @@ pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
         .kakisute_list
         .body
         .iter()
-        .map(|file_name| ListItem::new(*file_name))
+        .map(|file_name| ListItem::new(file_name.to_string()))
         .collect::<Vec<ListItem>>();
 
     let list = List::new(file_names)

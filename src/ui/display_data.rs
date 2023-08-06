@@ -1,4 +1,4 @@
-use crate::ui::app_interactor::{AppInteractor, Mode};
+use crate::ui::app_interactor::Mode;
 
 const DELETE_MODAL_BODY: &str = "Are you sure you want to delete? (Y/n)";
 const DELETE_MODAL_TITLE: &str = "Confirm Modal";
@@ -18,7 +18,7 @@ const HELP_TITLE: &str = "Help";
 
 pub struct DisplayData<'a> {
     pub index: Option<usize>,
-    pub mode: &'a Mode,
+    pub mode: Mode,
     pub kakisute_list: BlockData<Vec<&'a str>>,
     pub content: BlockData<String>,
     pub user_input: BlockData<&'a str>,
@@ -26,29 +26,29 @@ pub struct DisplayData<'a> {
     pub delete_modal: BlockData<&'a str>,
 }
 
+pub struct Info<'a> {
+    pub index: Option<usize>,
+    pub mode: Mode,
+    pub kakisute_list: Vec<&'a str>,
+    pub content: Option<String>,
+    pub user_input: &'a str,
+}
+
 impl<'a> DisplayData<'a> {
-    pub fn new(app_interactor: &'a AppInteractor) -> Self {
-        let kakisute_list = DisplayData::create_kakisute_list(
-            app_interactor.get_kakisute_file_name_list(),
-            app_interactor.get_selected_index(),
-        );
+    pub fn new(info: Info<'a>) -> Self {
+        let kakisute_list = DisplayData::create_kakisute_list(info.kakisute_list, info.index);
 
-        let kakisute_content = app_interactor.get_selected_kakisute_content();
+        let content = DisplayData::create_content(info.content);
 
-        let content = DisplayData::create_content(kakisute_content);
+        let user_input = DisplayData::create_user_input_modal(info.user_input, &info.mode);
 
-        let user_input = DisplayData::create_user_input_modal(
-            app_interactor.get_user_input(),
-            app_interactor.get_mode(),
-        );
-
-        let help = DisplayData::create_help(app_interactor.get_mode());
+        let help = DisplayData::create_help(&info.mode);
 
         let delete_modal = BlockData::new(DELETE_MODAL_BODY, DELETE_MODAL_TITLE);
 
         Self {
-            index: app_interactor.get_selected_index(),
-            mode: app_interactor.get_mode(),
+            index: info.index,
+            mode: info.mode,
             kakisute_list,
             content,
             user_input,
@@ -58,9 +58,9 @@ impl<'a> DisplayData<'a> {
     }
 
     fn create_kakisute_list(
-        kakisute_list: Vec<&str>,
+        kakisute_list: Vec<&'a str>,
         index: Option<usize>,
-    ) -> BlockData<Vec<&str>> {
+    ) -> BlockData<Vec<&'a str>> {
         let title = if let Some(index) = index {
             format!(
                 "{} ({}/{})",

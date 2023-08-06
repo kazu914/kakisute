@@ -1,25 +1,22 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use grep::matcher::LineTerminator;
 use grep::regex::RegexMatcher;
 use grep::searcher::sinks::UTF8;
-use grep::searcher::Searcher;
+use grep::searcher::SearcherBuilder;
 
-use crate::service::ServiceTrait;
 use crate::ui::list_index::ListIndex;
 
 pub struct FilteredList {
     list_index: ListIndex,
-    kakisute_name_list: Vec<String>,
     filtered_indexes: Vec<usize>,
 }
 
 impl FilteredList {
-    pub fn new(service: &dyn ServiceTrait) -> Self {
-        let kakisute_list = service.get_kakisute_list();
-        let filtered_indexes: Vec<usize> = (0..kakisute_list.len()).collect();
+    pub fn new(list_size: usize) -> Self {
+        let filtered_indexes: Vec<usize> = (0..list_size).collect();
         let index = ListIndex::new(filtered_indexes.len());
         FilteredList {
             list_index: index,
-            kakisute_name_list: kakisute_list,
             filtered_indexes,
         }
     }
@@ -44,24 +41,38 @@ impl FilteredList {
         self.list_index.get_index()
     }
 
+    pub fn get_original_index(&self) -> Result<usize> {
+        if self.list_index.is_none() {
+            return Err(anyhow!(
+                "Received get_original_index while ListIndex is None"
+            ));
+        }
+        Ok(self.filtered_indexes[self.list_index.get_index()?])
+    }
+
     pub fn is_some(&self) -> bool {
         self.list_index.is_some()
     }
 
-    pub fn get_kakisute_file_name_list(&self) -> Vec<&str> {
+    pub fn get_kakisute_file_name_list<'a>(
+        &'a self,
+        kakisute_name_list: Vec<&'a str>,
+    ) -> Vec<&str> {
         self.filtered_indexes
             .iter()
-            .filter_map(|&index| self.kakisute_name_list.get(index))
-            .map(|s| s.as_str())
+            .filter_map(|&index| kakisute_name_list.get(index).copied())
             .collect()
     }
 
-    pub fn filter(&mut self, user_input: &str) -> Result<()> {
+    pub fn filter(&mut self, user_input: &str, kakisute_content_list: Vec<String>) -> Result<()> {
         let matcher = RegexMatcher::new(user_input)?;
         let mut matches: Vec<u64> = vec![];
-        Searcher::new().search_slice(
+        let mut searcher = SearcherBuilder::new()
+            .line_terminator(LineTerminator::byte(b'\0'))
+            .build();
+        searcher.search_slice(
             &matcher,
-            self.kakisute_name_list.join("\n").as_bytes(),
+            kakisute_content_list.join("\0").as_bytes(),
             UTF8(|lnum, _| {
                 matches.push(lnum - 1);
                 Ok(true)
@@ -74,50 +85,13 @@ impl FilteredList {
 }
 
 #[cfg(test)]
-use crate::service::kakisute_list::KakisuteList;
-#[cfg(test)]
 use speculate::speculate;
-
-#[cfg(test)]
-struct ServiceMock {
-    kakisute_list: KakisuteList,
-}
-
-#[cfg(test)]
-impl ServiceMock {
-    fn new(kakisute_list: KakisuteList) -> Self {
-        ServiceMock { kakisute_list }
-    }
-}
-
-#[cfg(test)]
-impl ServiceTrait for ServiceMock {
-    fn create_kakisute(&self, _: Option<&str>) -> Result<String> {
-        Ok("Ok".to_string())
-    }
-    fn edit_by_index(&self, _: usize) -> Result<String> {
-        Ok("ok".to_string())
-    }
-    fn delete_by_index(&self, _: usize) -> Result<String> {
-        Ok("ok".to_string())
-    }
-    fn get_content_by_index(&self, _: usize) -> Result<String> {
-        Ok("Ok".to_string())
-    }
-
-    fn reload(&self) {}
-
-    fn get_kakisute_list(&self) -> Vec<String> {
-        self.kakisute_list.get_kakisute_file_name_list()
-    }
-}
 
 #[cfg(test)]
 speculate! {
     describe "empty filtered_list" {
         before {
-            let mut service = ServiceMock::new(KakisuteList::new());
-            let filtered_list = FilteredList::new(&mut service);
+            let filtered_list = FilteredList::new(0);
         }
 
         it "index should be None" {
@@ -125,7 +99,7 @@ speculate! {
         }
 
         it "should start with empty items" {
-            assert_eq!(filtered_list.kakisute_name_list.len(), 0)
+            assert_eq!(filtered_list.filtered_indexes.len(), 0)
         }
     }
 }

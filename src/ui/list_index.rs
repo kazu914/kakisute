@@ -52,7 +52,7 @@ impl ListIndex {
     }
 
     pub fn is_none(&self) -> bool {
-        self.index.is_none()
+        self.index.is_none() || self.size == 0
     }
 
     pub fn get_index(&self) -> Result<usize> {

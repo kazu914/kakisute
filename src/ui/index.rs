@@ -27,7 +27,7 @@ fn render_loop(
     terminal_manager: &mut dyn TerminalManage,
     app_interactor: &mut AppInteractor,
 ) -> Result<()> {
-    terminal_manager.draw_frame(DisplayData::new(app_interactor))?;
+    terminal_manager.draw_frame(DisplayData::new(app_interactor.generate_info()))?;
 
     if let Event::Key(KeyEvent {
         code, modifiers, ..

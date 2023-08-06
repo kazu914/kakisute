@@ -30,7 +30,7 @@ pub fn handle_input(
                 terminal_manager.exit_app_screen()?;
                 app_interactor.create_new_kakisute_with_file_name()?;
                 terminal_manager.enter_app_screen()?;
-                app_interactor.reload();
+                app_interactor.reload()?;
                 app_interactor.clear_user_input();
             }
             _ => {}
@@ -65,6 +65,7 @@ pub fn handle_input(
                     app_interactor.edit_kakisute()?;
                     terminal_manager.enter_app_screen()?;
                     terminal_manager.clear_app_screen()?;
+                    app_interactor.reload()?;
                 }
             }
             (KeyCode::Char('n'), KeyModifiers::NONE) => {
@@ -72,7 +73,7 @@ pub fn handle_input(
                 app_interactor.create_new_kakisute()?;
                 terminal_manager.enter_app_screen()?;
                 terminal_manager.clear_app_screen()?;
-                app_interactor.reload();
+                app_interactor.reload()?;
             }
             (KeyCode::Char('d'), KeyModifiers::NONE) => {
                 app_interactor.enter_mode(Mode::DeleteConfirm);
@@ -88,7 +89,7 @@ pub fn handle_input(
             }
             (KeyCode::Char('Y'), KeyModifiers::SHIFT) => {
                 app_interactor.delete_kakisute()?;
-                app_interactor.reload();
+                app_interactor.reload()?;
             }
             _ => {}
         },
