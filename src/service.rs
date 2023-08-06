@@ -5,8 +5,7 @@ use grep::printer::{ColorSpecs, StandardBuilder};
 use grep::regex::RegexMatcher;
 use std::process;
 
-use anyhow::{Ok, Result};
-use core::result::Result::Ok as CoreOk;
+use anyhow::{anyhow, Ok, Result};
 use grep::searcher::Searcher;
 use termcolor::ColorChoice;
 use walkdir::WalkDir;
@@ -19,7 +18,7 @@ use self::kakisute_list::KakisuteList;
 use self::search_query::SingleQuery;
 
 pub struct Service<'a> {
-    kakisute_list: KakisuteList,
+    kakisute_list: &'a KakisuteList,
     repository: &'a dyn IRepository,
 }
 
@@ -28,15 +27,14 @@ pub mod kakisute_list;
 pub mod search_query;
 
 impl<'a> Service<'a> {
-    pub fn new(repository: &'a dyn IRepository) -> Self {
-        let kakisute_list = KakisuteList::from_dir(repository.read_dir());
+    pub fn new(repository: &'a dyn IRepository, kakisute_list: &'a KakisuteList) -> Self {
         Service {
             kakisute_list,
             repository,
         }
     }
 
-    pub fn delete_by_single_query(&self, query: SingleQuery) -> Result<&str> {
+    pub fn delete_by_single_query(&self, query: SingleQuery) -> Result<String> {
         let index = self.get_index_by_single_query(query);
         self.delete_by_index(index)
     }
@@ -46,7 +44,7 @@ impl<'a> Service<'a> {
         self.get_content_by_index(index)
     }
 
-    pub fn edit_by_single_query(&self, query: SingleQuery) -> Result<&str> {
+    pub fn edit_by_single_query(&self, query: SingleQuery) -> Result<String> {
         let index = self.get_index_by_single_query(query);
         self.edit_by_index(index)
     }
@@ -57,8 +55,12 @@ impl<'a> Service<'a> {
     }
 
     fn inspect_by_index(&self, index: usize) -> Result<String> {
-        let file_name = self.kakisute_list.get_file_name_by_index(index)?;
-        self.repository.get_path(file_name)
+        if let Some(file_name) = self.kakisute_list.get_file_name_by_index(index) {
+            let path = self.repository.get_path(&file_name)?;
+            Ok(path)
+        } else {
+            Err(anyhow!("File not found"))
+        }
     }
 
     fn get_index_by_single_query(&self, query: SingleQuery) -> usize {
@@ -71,15 +73,18 @@ impl<'a> Service<'a> {
     }
 
     fn get_kakisute(&self, index: usize) -> Result<Kakisute> {
-        let file_name = self.kakisute_list.get_file_name_by_index(index)?;
-        let content = self.repository.get_content(file_name)?;
-        Ok(Kakisute::new(content))
+        if let Some(file_name) = self.kakisute_list.get_file_name_by_index(index) {
+            let content = self.repository.get_content(&file_name)?;
+            Ok(Kakisute::new(content))
+        } else {
+            Err(anyhow!("File not found"))
+        }
     }
 
-    fn generate_file_name(date: DateTime<Local>, file_name: Option<String>) -> String {
+    fn generate_file_name(date: DateTime<Local>, file_name: Option<&str>) -> String {
         let prefix = datetime_to_string(date);
         if let Some(file_name) = file_name {
-            prefix + "_" + &file_name
+            prefix + "_" + file_name
         } else {
             prefix + ".txt"
         }
@@ -96,15 +101,9 @@ impl<'a> Service<'a> {
             }));
 
         for file_name in self.kakisute_list.get_kakisute_file_name_list() {
-            let path = self.repository.get_path(file_name)?;
+            let path = self.repository.get_path(&file_name)?;
             for result in WalkDir::new(path) {
-                let dent = match result {
-                    CoreOk(dent) => dent,
-                    Err(err) => {
-                        eprintln!("{}", err);
-                        continue;
-                    }
-                };
+                let dent = result?;
                 if !dent.file_type().is_file() {
                     continue;
                 }
@@ -124,45 +123,51 @@ impl<'a> Service<'a> {
 }
 
 impl ServiceTrait for Service<'_> {
-    fn create_kakisute(&self, file_name: Option<String>) -> Result<String> {
+    fn create_kakisute(&self, file_name: Option<&str>) -> Result<String> {
         let created_at = Local::now();
         let file_name = Service::generate_file_name(created_at, file_name);
         self.repository.edit(&file_name)?;
         Ok(file_name)
     }
 
-    fn edit_by_index(&self, index: usize) -> Result<&str> {
-        let file_name = self.kakisute_list.get_file_name_by_index(index)?;
-        self.repository.edit(file_name)?;
-        Ok(file_name)
+    fn edit_by_index(&self, index: usize) -> Result<String> {
+        if let Some(file_name) = self.kakisute_list.get_file_name_by_index(index) {
+            self.repository.edit(&file_name)?;
+            Ok(file_name)
+        } else {
+            Err(anyhow!("File not found"))
+        }
     }
 
-    fn delete_by_index(&self, index: usize) -> Result<&str> {
-        let file_name = self.kakisute_list.get_file_name_by_index(index)?;
-        self.repository.delete(file_name)?;
-        Ok(file_name)
+    fn delete_by_index(&self, index: usize) -> Result<String> {
+        if let Some(file_name) = self.kakisute_list.get_file_name_by_index(index) {
+            self.repository.delete(&file_name)?;
+            Ok(file_name)
+        } else {
+            Err(anyhow!("File not found"))
+        }
     }
 
     fn get_content_by_index(&self, index: usize) -> Result<String> {
         let kakisute = self.get_kakisute(index)?;
         Ok(kakisute.content())
     }
-    fn reload(&mut self) {
-        self.kakisute_list = KakisuteList::from_dir(self.repository.read_dir());
+    fn reload(&self) {
+        self.kakisute_list.reload(self.repository.read_dir());
     }
 
-    fn get_kakisute_list(&self) -> KakisuteList {
-        self.kakisute_list.clone()
+    fn get_kakisute_list(&self) -> Vec<String> {
+        self.kakisute_list.get_kakisute_file_name_list()
     }
 }
 
 pub trait ServiceTrait {
-    fn create_kakisute(&self, file_name: Option<String>) -> Result<String>;
-    fn edit_by_index(&self, index: usize) -> Result<&str>;
-    fn delete_by_index(&self, index: usize) -> Result<&str>;
+    fn create_kakisute(&self, file_name: Option<&str>) -> Result<String>;
+    fn edit_by_index(&self, index: usize) -> Result<String>;
+    fn delete_by_index(&self, index: usize) -> Result<String>;
     fn get_content_by_index(&self, index: usize) -> Result<String>;
-    fn reload(&mut self);
-    fn get_kakisute_list(&self) -> KakisuteList;
+    fn reload(&self);
+    fn get_kakisute_list(&self) -> Vec<String>;
 }
 
 #[cfg(test)]
@@ -180,7 +185,7 @@ speculate! {
         }
 
         it "joins datetime and given file_name" {
-            let file_name = Service::generate_file_name(date,Some("test.sql".to_string()));
+            let file_name = Service::generate_file_name(date,Some("test.sql"));
             assert_eq!(file_name,"2022_01_10_16_30_15_test.sql")
         }
 

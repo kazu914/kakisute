@@ -16,25 +16,43 @@ use tui::{
 
 use super::app_interactor::Mode;
 
+pub const SEARCH_BOX_LENGTH: u16 = 3;
 pub const HELP_BOX_LENGTH: u16 = 3;
 pub const CONTENT_CHUNK_MIN_SIZE: u16 = 3;
 pub const LIST_WIDTH_PERCENT: u16 = 20;
 pub const CONTENT_WIDTH_PERCENT: u16 = 80;
 pub const MARGIN: u16 = 1;
 
-pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(MARGIN)
-        .constraints(
-            [
-                Constraint::Min(CONTENT_CHUNK_MIN_SIZE),
-                Constraint::Length(HELP_BOX_LENGTH),
-            ]
-            .as_ref(),
-        )
-        .split(f.size());
+fn build_main_layout<B: Backend>(f: &mut Frame<B>, mode: &Mode) -> Vec<Rect> {
+    match mode {
+        Mode::Search => Layout::default()
+            .direction(Direction::Vertical)
+            .margin(MARGIN)
+            .constraints(
+                [
+                    Constraint::Min(CONTENT_CHUNK_MIN_SIZE),
+                    Constraint::Length(SEARCH_BOX_LENGTH),
+                    Constraint::Length(HELP_BOX_LENGTH),
+                ]
+                .as_ref(),
+            )
+            .split(f.size()),
+        _ => Layout::default()
+            .direction(Direction::Vertical)
+            .margin(MARGIN)
+            .constraints(
+                [
+                    Constraint::Min(CONTENT_CHUNK_MIN_SIZE),
+                    Constraint::Length(HELP_BOX_LENGTH),
+                ]
+                .as_ref(),
+            )
+            .split(f.size()),
+    }
+}
 
+pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
+    let chunks = build_main_layout(f, &display_data.mode);
     let content_chunk = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(
@@ -50,7 +68,7 @@ pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
         .kakisute_list
         .body
         .iter()
-        .map(|&file_name| ListItem::new(file_name))
+        .map(|file_name| ListItem::new(file_name.to_string()))
         .collect::<Vec<ListItem>>();
 
     let list = List::new(file_names)
@@ -84,23 +102,23 @@ pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
             .title(display_data.help.title)
             .borders(Borders::ALL),
     );
-    f.render_widget(help, chunks[1]);
+    f.render_widget(help, chunks[chunks.len() - 1]);
 
     match display_data.mode {
         Mode::Insert => {
-            let input = Paragraph::new(display_data.new_file_name_modal.body)
+            let input = Paragraph::new(display_data.user_input.body)
                 .style(Style::default().fg(Color::Blue))
                 .block(
                     Block::default()
                         .borders(Borders::ALL)
-                        .title(display_data.new_file_name_modal.title)
+                        .title(display_data.user_input.title)
                         .title_alignment(Alignment::Center),
                 );
             let area = centered_rect(50, 3, f.size());
             f.render_widget(Clear, area); //this clears out the background
             f.render_widget(input, area);
             f.set_cursor(
-                area.x + display_data.new_file_name_modal.body.width_cjk() as u16 + 1,
+                area.x + display_data.user_input.body.width_cjk() as u16 + 1,
                 area.y + 1,
             )
         }
@@ -116,6 +134,20 @@ pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
             let area = centered_rect(50, 3, f.size());
             f.render_widget(Clear, area); //this clears out the background
             f.render_widget(input, area);
+        }
+        Mode::Search => {
+            let input = Paragraph::new(display_data.user_input.body)
+                .style(Style::default().fg(Color::Blue))
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title(display_data.user_input.title),
+                );
+            f.render_widget(input, chunks[1]);
+            f.set_cursor(
+                chunks[1].x + display_data.user_input.body.width_cjk() as u16 + 1,
+                chunks[1].y + 1,
+            )
         }
         _ => {}
     }
