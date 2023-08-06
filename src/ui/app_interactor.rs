@@ -1,6 +1,5 @@
-use crate::service::kakisute_list::KakisuteList;
 use crate::service::ServiceTrait;
-use crate::ui::list_index::ListIndex;
+use crate::ui::filtered_list::FilteredList;
 use anyhow::Result;
 use std::result::Result::Ok;
 
@@ -13,38 +12,35 @@ pub enum Mode {
 }
 
 pub struct AppInteractor<'a> {
-    selected_list_index: ListIndex,
-    items: KakisuteList,
     mode: Mode,
     user_input: String,
     exit: bool,
-    service: &'a mut dyn ServiceTrait,
+    service: &'a dyn ServiceTrait,
+    filtered_list: FilteredList,
 }
 
 impl<'a> AppInteractor<'a> {
-    pub fn new(service: &'a mut dyn ServiceTrait) -> Self {
-        let kakisute_list = service.get_kakisute_list();
-        let index = ListIndex::new(kakisute_list.len());
+    pub fn new(service: &'a dyn ServiceTrait) -> Self {
+        let filtered_list = FilteredList::new(service);
         AppInteractor {
-            selected_list_index: index,
-            items: kakisute_list,
             mode: Mode::Normal,
             user_input: String::new(),
             exit: false,
             service,
+            filtered_list,
         }
     }
 
     pub fn reload(&mut self) {
         self.service.reload();
-        let kakisute_file_list = self.service.get_kakisute_list();
-        let index = ListIndex::new(kakisute_file_list.len());
-        self.selected_list_index = index;
-        self.items = kakisute_file_list;
+        let filtered_list = FilteredList::new(self.service);
         self.mode = Mode::Normal;
+        self.filtered_list = filtered_list;
     }
 
-    pub fn filter(&mut self) {}
+    pub fn filter(&mut self) -> Result<()> {
+        self.filtered_list.filter(&self.user_input)
+    }
 
     pub fn enter_insert_mode(&mut self) {
         self.mode = Mode::Insert;
@@ -59,23 +55,27 @@ impl<'a> AppInteractor<'a> {
         self.mode = Mode::Search;
     }
     pub fn select_next(&mut self) {
-        self.selected_list_index.increment();
+        self.filtered_list.select_next();
     }
     pub fn select_previous(&mut self) {
-        self.selected_list_index.decrement();
+        self.filtered_list.select_previous();
     }
     pub fn select_next_n(&mut self, n: u16) {
-        self.selected_list_index.increment_n(n);
+        self.filtered_list.select_next_n(n);
     }
     pub fn select_previous_n(&mut self, n: u16) {
-        self.selected_list_index.decrement_n(n);
+        self.filtered_list.select_previous_n(n);
+    }
+
+    pub fn get_selected_index(&self) -> Option<usize> {
+        self.filtered_list.get_index().ok()
     }
     pub fn clear_user_input(&mut self) {
         self.user_input = String::new();
     }
 
     pub fn get_selected_kakisute_content(&self) -> Option<String> {
-        let index = self.selected_list_index.get_index();
+        let index = self.filtered_list.get_index();
         if let Ok(index) = index {
             self.service.get_content_by_index(index).ok()
         } else {
@@ -84,7 +84,7 @@ impl<'a> AppInteractor<'a> {
     }
 
     pub fn edit_kakisute(&self) -> Result<()> {
-        let index = self.selected_list_index.get_index()?;
+        let index = self.filtered_list.get_index()?;
         self.service.edit_by_index(index)?;
         Ok(())
     }
@@ -101,21 +101,17 @@ impl<'a> AppInteractor<'a> {
     }
 
     pub fn delete_kakisute(&self) -> Result<()> {
-        let index = self.selected_list_index.get_index()?;
+        let index = self.filtered_list.get_index()?;
         self.service.delete_by_index(index)?;
         Ok(())
     }
 
     pub fn is_kakisute_selected(&self) -> bool {
-        self.selected_list_index.is_some()
-    }
-
-    pub fn get_selected_index(&self) -> Option<usize> {
-        self.selected_list_index.get_index().ok()
+        self.filtered_list.is_some()
     }
 
     pub fn get_kakisute_file_name_list(&self) -> Vec<&str> {
-        self.items.get_kakisute_file_name_list()
+        self.filtered_list.get_kakisute_file_name_list()
     }
 
     pub fn get_mode(&self) -> &Mode {
@@ -147,6 +143,9 @@ impl<'a> AppInteractor<'a> {
 use speculate::speculate;
 
 #[cfg(test)]
+use crate::service::kakisute_list::KakisuteList;
+
+#[cfg(test)]
 struct ServiceMock {
     kakisute_list: KakisuteList,
 }
@@ -163,20 +162,20 @@ impl ServiceTrait for ServiceMock {
     fn create_kakisute(&self, _: Option<String>) -> Result<String> {
         Ok("Ok".to_string())
     }
-    fn edit_by_index(&self, _: usize) -> Result<&str> {
-        Ok("ok")
+    fn edit_by_index(&self, _: usize) -> Result<String> {
+        Ok("ok".to_string())
     }
-    fn delete_by_index(&self, _: usize) -> Result<&str> {
-        Ok("ok")
+    fn delete_by_index(&self, _: usize) -> Result<String> {
+        Ok("ok".to_string())
     }
     fn get_content_by_index(&self, _: usize) -> Result<String> {
         Ok("Ok".to_string())
     }
 
-    fn reload(&mut self) {}
+    fn reload(&self) {}
 
-    fn get_kakisute_list(&self) -> KakisuteList {
-        self.kakisute_list.clone()
+    fn get_kakisute_list(&self) -> Vec<String> {
+        self.kakisute_list.get_kakisute_file_name_list()
     }
 }
 
@@ -186,14 +185,6 @@ speculate! {
         before {
             let mut service = ServiceMock::new(KakisuteList::new());
             let app_interactor = AppInteractor::new(&mut service);
-        }
-
-        it "index should be None" {
-            assert!(app_interactor.selected_list_index.is_none())
-        }
-
-        it "should start with empty items" {
-            assert_eq!(app_interactor.items.len(), 0)
         }
 
         it "return error if edit is called" {

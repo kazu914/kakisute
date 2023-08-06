@@ -68,7 +68,7 @@ fn handle_input(
             _ => {}
         },
         Mode::Normal => match (key_code, key_modifier) {
-            (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
+            (KeyCode::Char('q'), KeyModifiers::NONE) => {
                 terminal_manager.exit_app_screen()?;
                 app_interactor.exit();
             }
@@ -125,21 +125,25 @@ fn handle_input(
             _ => {}
         },
         Mode::Search => match (key_code, key_modifier) {
-            (KeyCode::Enter, KeyModifiers::NONE) | (KeyCode::Esc, KeyModifiers::NONE) => {
+            (KeyCode::Enter, KeyModifiers::NONE) => {
+                app_interactor.enter_normal_mode();
+            }
+            (KeyCode::Esc, KeyModifiers::NONE) => {
                 app_interactor.clear_user_input();
+                app_interactor.filter()?;
                 app_interactor.enter_normal_mode();
             }
             (KeyCode::Char(c), KeyModifiers::NONE) => {
                 app_interactor.push_user_input(c);
-                app_interactor.filter();
+                app_interactor.filter()?
             }
             (KeyCode::Char(c), KeyModifiers::SHIFT) => {
                 app_interactor.push_user_input(c);
-                app_interactor.filter();
+                app_interactor.filter()?
             }
             (KeyCode::Backspace, KeyModifiers::NONE) => {
                 app_interactor.pop_user_input();
-                app_interactor.filter();
+                app_interactor.filter()?
             }
             _ => {}
         },

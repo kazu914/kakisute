@@ -4,7 +4,7 @@ use clap::{AppSettings, CommandFactory, Parser, Subcommand};
 use clap_complete::{generate, Generator, Shell};
 use kakisute::{
     repository::Repository,
-    service::{Service, ServiceTrait},
+    service::{interface::IRepository, kakisute_list::KakisuteList, Service, ServiceTrait},
     ui,
 };
 
@@ -75,7 +75,8 @@ enum Action {
 fn main() -> anyhow::Result<()> {
     let cli = Args::parse();
     let repository = Repository::new(cli.data_dir);
-    let mut service = Service::new(&repository);
+    let kakisute_list = KakisuteList::from_dir(repository.read_dir());
+    let mut service = Service::new(&repository, &kakisute_list);
 
     match cli.action {
         Action::New { kakisute_name } => {
@@ -87,7 +88,7 @@ fn main() -> anyhow::Result<()> {
 
             let stdout = io::stdout();
             let mut handle = io::BufWriter::new(stdout);
-            for file_name in kakisute_list.get_kakisute_file_name_list() {
+            for file_name in kakisute_list {
                 writeln!(handle, "{}", file_name).ok();
             }
         }
