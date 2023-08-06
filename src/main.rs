@@ -80,7 +80,7 @@ fn main() -> anyhow::Result<()> {
 
     match cli.action {
         Action::New { kakisute_name } => {
-            let created_kakisute_name = service.create_kakisute(kakisute_name)?;
+            let created_kakisute_name = service.create_kakisute(kakisute_name.as_deref())?;
             println!("Created: {}", created_kakisute_name);
         }
         Action::List {} => {

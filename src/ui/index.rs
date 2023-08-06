@@ -47,7 +47,7 @@ fn handle_input(
         Mode::Insert => match (key_code, key_modifier) {
             (KeyCode::Esc, KeyModifiers::NONE) => {
                 app_interactor.clear_user_input();
-                app_interactor.enter_normal_mode();
+                app_interactor.enter_mode(Mode::Normal);
             }
             (KeyCode::Char(c), KeyModifiers::NONE) => {
                 app_interactor.push_user_input(c);
@@ -73,7 +73,7 @@ fn handle_input(
                 app_interactor.exit();
             }
             (KeyCode::Char('N'), KeyModifiers::SHIFT) => {
-                app_interactor.enter_insert_mode();
+                app_interactor.enter_mode(Mode::Insert);
             }
             (KeyCode::Char('j'), KeyModifiers::NONE) | (KeyCode::Down, KeyModifiers::NONE) => {
                 app_interactor.select_next();
@@ -107,16 +107,16 @@ fn handle_input(
                 app_interactor.reload();
             }
             (KeyCode::Char('d'), KeyModifiers::NONE) => {
-                app_interactor.enter_delete_mode();
+                app_interactor.enter_mode(Mode::DeleteConfirm);
             }
             (KeyCode::Char('/'), KeyModifiers::NONE) => {
-                app_interactor.enter_search_mode();
+                app_interactor.enter_mode(Mode::Search);
             }
             _ => {}
         },
         Mode::DeleteConfirm => match (key_code, key_modifier) {
             (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('n'), KeyModifiers::NONE) => {
-                app_interactor.enter_normal_mode();
+                app_interactor.enter_mode(Mode::Normal);
             }
             (KeyCode::Char('Y'), KeyModifiers::SHIFT) => {
                 app_interactor.delete_kakisute()?;
@@ -126,12 +126,12 @@ fn handle_input(
         },
         Mode::Search => match (key_code, key_modifier) {
             (KeyCode::Enter, KeyModifiers::NONE) => {
-                app_interactor.enter_normal_mode();
+                app_interactor.enter_mode(Mode::Normal);
             }
             (KeyCode::Esc, KeyModifiers::NONE) => {
                 app_interactor.clear_user_input();
                 app_interactor.filter()?;
-                app_interactor.enter_normal_mode();
+                app_interactor.enter_mode(Mode::Normal);
             }
             (KeyCode::Char(c), KeyModifiers::NONE) => {
                 app_interactor.push_user_input(c);

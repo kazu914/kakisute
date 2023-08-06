@@ -92,7 +92,7 @@ impl ServiceMock {
 
 #[cfg(test)]
 impl ServiceTrait for ServiceMock {
-    fn create_kakisute(&self, _: Option<String>) -> Result<String> {
+    fn create_kakisute(&self, _: Option<&str>) -> Result<String> {
         Ok("Ok".to_string())
     }
     fn edit_by_index(&self, _: usize) -> Result<String> {

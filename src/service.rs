@@ -6,7 +6,6 @@ use grep::regex::RegexMatcher;
 use std::process;
 
 use anyhow::{anyhow, Ok, Result};
-use core::result::Result::Ok as CoreOk;
 use grep::searcher::Searcher;
 use termcolor::ColorChoice;
 use walkdir::WalkDir;
@@ -82,10 +81,10 @@ impl<'a> Service<'a> {
         }
     }
 
-    fn generate_file_name(date: DateTime<Local>, file_name: Option<String>) -> String {
+    fn generate_file_name(date: DateTime<Local>, file_name: Option<&str>) -> String {
         let prefix = datetime_to_string(date);
         if let Some(file_name) = file_name {
-            prefix + "_" + &file_name
+            prefix + "_" + file_name
         } else {
             prefix + ".txt"
         }
@@ -104,13 +103,7 @@ impl<'a> Service<'a> {
         for file_name in self.kakisute_list.get_kakisute_file_name_list() {
             let path = self.repository.get_path(&file_name)?;
             for result in WalkDir::new(path) {
-                let dent = match result {
-                    CoreOk(dent) => dent,
-                    Err(err) => {
-                        eprintln!("{}", err);
-                        continue;
-                    }
-                };
+                let dent = result?;
                 if !dent.file_type().is_file() {
                     continue;
                 }
@@ -130,7 +123,7 @@ impl<'a> Service<'a> {
 }
 
 impl ServiceTrait for Service<'_> {
-    fn create_kakisute(&self, file_name: Option<String>) -> Result<String> {
+    fn create_kakisute(&self, file_name: Option<&str>) -> Result<String> {
         let created_at = Local::now();
         let file_name = Service::generate_file_name(created_at, file_name);
         self.repository.edit(&file_name)?;
@@ -169,7 +162,7 @@ impl ServiceTrait for Service<'_> {
 }
 
 pub trait ServiceTrait {
-    fn create_kakisute(&self, file_name: Option<String>) -> Result<String>;
+    fn create_kakisute(&self, file_name: Option<&str>) -> Result<String>;
     fn edit_by_index(&self, index: usize) -> Result<String>;
     fn delete_by_index(&self, index: usize) -> Result<String>;
     fn get_content_by_index(&self, index: usize) -> Result<String>;
@@ -192,7 +185,7 @@ speculate! {
         }
 
         it "joins datetime and given file_name" {
-            let file_name = Service::generate_file_name(date,Some("test.sql".to_string()));
+            let file_name = Service::generate_file_name(date,Some("test.sql"));
             assert_eq!(file_name,"2022_01_10_16_30_15_test.sql")
         }
 

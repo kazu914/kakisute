@@ -42,18 +42,10 @@ impl<'a> AppInteractor<'a> {
         self.filtered_list.filter(&self.user_input)
     }
 
-    pub fn enter_insert_mode(&mut self) {
-        self.mode = Mode::Insert;
+    pub fn enter_mode(&mut self, mode: Mode) {
+        self.mode = mode;
     }
-    pub fn enter_normal_mode(&mut self) {
-        self.mode = Mode::Normal;
-    }
-    pub fn enter_delete_mode(&mut self) {
-        self.mode = Mode::DeleteConfirm;
-    }
-    pub fn enter_search_mode(&mut self) {
-        self.mode = Mode::Search;
-    }
+
     pub fn select_next(&mut self) {
         self.filtered_list.select_next();
     }
@@ -71,27 +63,24 @@ impl<'a> AppInteractor<'a> {
         self.filtered_list.get_index().ok()
     }
     pub fn clear_user_input(&mut self) {
-        self.user_input = String::new();
+        self.user_input.clear();
     }
 
     pub fn get_selected_kakisute_content(&self) -> Option<String> {
-        let index = self.filtered_list.get_index();
-        if let Ok(index) = index {
-            self.service.get_content_by_index(index).ok()
-        } else {
-            None
-        }
+        self.filtered_list
+            .get_index()
+            .and_then(|index| self.service.get_content_by_index(index))
+            .ok()
     }
 
-    pub fn edit_kakisute(&self) -> Result<()> {
-        let index = self.filtered_list.get_index()?;
-        self.service.edit_by_index(index)?;
-        Ok(())
+    pub fn edit_kakisute(&self) -> Result<String> {
+        self.filtered_list
+            .get_index()
+            .and_then(|index| self.service.edit_by_index(index))
     }
 
     pub fn create_new_kakisute_with_file_name(&self) -> Result<()> {
-        self.service
-            .create_kakisute(Some(self.user_input.clone()))?;
+        self.service.create_kakisute(Some(&self.user_input))?;
         Ok(())
     }
 
@@ -100,10 +89,10 @@ impl<'a> AppInteractor<'a> {
         Ok(())
     }
 
-    pub fn delete_kakisute(&self) -> Result<()> {
-        let index = self.filtered_list.get_index()?;
-        self.service.delete_by_index(index)?;
-        Ok(())
+    pub fn delete_kakisute(&self) -> Result<String> {
+        self.filtered_list
+            .get_index()
+            .and_then(|index| self.service.delete_by_index(index))
     }
 
     pub fn is_kakisute_selected(&self) -> bool {
@@ -159,7 +148,7 @@ impl ServiceMock {
 
 #[cfg(test)]
 impl ServiceTrait for ServiceMock {
-    fn create_kakisute(&self, _: Option<String>) -> Result<String> {
+    fn create_kakisute(&self, _: Option<&str>) -> Result<String> {
         Ok("Ok".to_string())
     }
     fn edit_by_index(&self, _: usize) -> Result<String> {
@@ -227,18 +216,18 @@ speculate! {
         }
 
         it "enter_insert_mode should make mode insert" {
-            app_interactor.enter_insert_mode();
+            app_interactor.enter_mode(Mode::Insert);
             assert_eq!(app_interactor.mode, Mode::Insert)
         }
 
         it "enter_normal_mode should make mode insert" {
-            app_interactor.enter_insert_mode();
-            app_interactor.enter_normal_mode();
+            app_interactor.enter_mode(Mode::Insert);
+            app_interactor.enter_mode(Mode::Normal);
             assert_eq!(app_interactor.mode, Mode::Normal)
         }
 
         it "enter_delete_mode should make mode delete" {
-            app_interactor.enter_delete_mode();
+            app_interactor.enter_mode(Mode::DeleteConfirm);
             assert_eq!(app_interactor.mode, Mode::DeleteConfirm)
         }
     }
