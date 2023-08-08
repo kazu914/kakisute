@@ -65,13 +65,16 @@ impl FilteredList {
     }
 
     pub fn filter(&mut self, user_input: &str, kakisute_content_list: Vec<String>) -> Result<()> {
-        let matcher = RegexMatcher::new(user_input)?;
+        let matcher = RegexMatcher::new(user_input);
+        if matcher.is_err() {
+            return Ok(());
+        }
         let mut matches: Vec<u64> = vec![];
         let mut searcher = SearcherBuilder::new()
             .line_terminator(LineTerminator::byte(b'\0'))
             .build();
         searcher.search_slice(
-            &matcher,
+            &matcher?,
             kakisute_content_list.join("\0").as_bytes(),
             UTF8(|lnum, _| {
                 matches.push(lnum - 1);
