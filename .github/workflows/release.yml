@@ -2,12 +2,10 @@ name: ReleaseFlow
 on:
   push:
     branches:
-      - develop
+      - master
 jobs:
   CreateRelease:
     runs-on: ubuntu-latest
-    outputs:
-      release_version: ${{steps.tag_version.outputs.new_tag}}
     steps:
       - uses: actions/checkout@v2
       - name: Bump version and push tag
@@ -23,7 +21,6 @@ jobs:
           body: ${{ steps.tag_version.outputs.changelog }}
   CreateBinary:
     name: Release binary
-    needs: CreateRelease
     strategy:
       matrix:
         platform:
@@ -31,17 +28,14 @@ jobs:
             target: x86_64-unknown-linux-gnu
             artifact_name: kakisute
             asset_name: kakisute-x86_64-unknown-linux-gnu
-            command: both
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: kakisute
             asset_name: kakisute-x86_64-apple-darwin
-            command: both
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: kakisute
             asset_name: kakisute-aarch64-apple-darwin
-            command: build
     runs-on: ${{ matrix.platform.os }}
     steps:
       - name: Checkout repository
@@ -61,7 +55,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: target/${{ matrix.platform.target }}/release/${{ matrix.platform.artifact_name }}
           asset_name: ${{ matrix.platform.asset_name }}
-          tag: ${{ needs.CreateRelease.outputs.release_version }}
+          tag: ${{ github.ref }}
           overwrite: true
       - name: Upload tarballs to release
         uses: svenstaro/upload-release-action@2.7.0
@@ -69,5 +63,5 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ matrix.platform.asset_name }}.tar.gz
           asset_name: ${{ matrix.platform.asset_name }}.tar.gz
-          tag: ${{ needs.CreateRelease.outputs.release_version }}
+          tag: ${{ github.ref }}
           overwrite: true
