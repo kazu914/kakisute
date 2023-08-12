@@ -2,7 +2,7 @@ name: ReleaseFlow
 on:
   push:
     branches:
-      - develop
+      - master
 jobs:
   CreateRelease:
     runs-on: ubuntu-latest
