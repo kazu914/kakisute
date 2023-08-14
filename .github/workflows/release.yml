@@ -71,3 +71,25 @@ jobs:
           asset_name: ${{ matrix.platform.asset_name }}.tar.gz
           tag: ${{ needs.CreateRelease.outputs.release_version }}
           overwrite: true
+  UpdateFormula:
+    needs: [CreateRelease, CreateBinary]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: robinraju/release-downloader@v1.8
+        with:
+          tag: "${{ needs.CreateRelease.outputs.release_version }}"
+          fileName: "kakisute-*.tar.gz"
+      - name: get checksum for aarch
+        run: |
+          sha256_aarch=$(sha256sum ./kakisute-aarch64-apple-darwin.tar.gz | cut -d" " -f1)
+          echo "sha256_aarch=$sha256_aarch" >> "$GITHUB_ENV"
+      - name: get checksum for x86
+        run: |
+          sha256_x86=$(sha256sum ./kakisute-x86_64-apple-darwin.tar.gz | cut -d" " -f1)
+          echo "sha256_x86=$sha256_x86" >> "$GITHUB_ENV"
+      - uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PAT }}
+          repository: kazu914/homebrew-kakisute
+          event-type: update-brew
+          client-payload: '{ "version": "${{ needs.CreateRelease.outputs.release_version }}", "sha256_arm": "${{ env.sha256_aarch }}", "sha256_x86": "${{ env.sha256_x86 }}"}'
