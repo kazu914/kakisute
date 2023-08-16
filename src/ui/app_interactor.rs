@@ -1,5 +1,5 @@
 use crate::service::ServiceTrait;
-use crate::ui::filtered_list::FilteredList;
+use crate::ui::components::filtered_list::FilteredList;
 use anyhow::Result;
 use std::cell::RefCell;
 use std::collections::HashMap;
