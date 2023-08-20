@@ -14,24 +14,23 @@ pub fn handle_input(
     match app_interactor.get_mode() {
         Mode::Insert => match (key_code, key_modifier) {
             (KeyCode::Esc, KeyModifiers::NONE) => {
-                app_interactor.clear_user_input();
+                app_interactor.clear_text_input();
                 app_interactor.enter_mode(Mode::Normal);
             }
             (KeyCode::Char(c), KeyModifiers::NONE) => {
-                app_interactor.push_user_input(c);
+                app_interactor.push_text_input(c);
             }
             (KeyCode::Char(c), KeyModifiers::SHIFT) => {
-                app_interactor.push_user_input(c);
+                app_interactor.push_text_input(c);
             }
             (KeyCode::Backspace, KeyModifiers::NONE) => {
-                app_interactor.pop_user_input();
+                app_interactor.pop_text_input();
             }
             (KeyCode::Enter, KeyModifiers::NONE) => {
                 terminal_manager.exit_app_screen()?;
                 app_interactor.create_new_kakisute_with_file_name()?;
                 terminal_manager.enter_app_screen()?;
                 app_interactor.reload()?;
-                app_interactor.clear_user_input();
             }
             _ => {}
         },
@@ -98,21 +97,27 @@ pub fn handle_input(
                 app_interactor.enter_mode(Mode::Normal);
             }
             (KeyCode::Esc, KeyModifiers::NONE) => {
-                app_interactor.clear_user_input();
+                app_interactor.clear_text_input();
                 app_interactor.filter()?;
                 app_interactor.enter_mode(Mode::Normal);
             }
             (KeyCode::Char(c), KeyModifiers::NONE) => {
-                app_interactor.push_user_input(c);
+                app_interactor.push_text_input(c);
                 app_interactor.filter()?
             }
             (KeyCode::Char(c), KeyModifiers::SHIFT) => {
-                app_interactor.push_user_input(c);
+                app_interactor.push_text_input(c);
                 app_interactor.filter()?
             }
             (KeyCode::Backspace, KeyModifiers::NONE) => {
-                app_interactor.pop_user_input();
+                app_interactor.pop_text_input();
                 app_interactor.filter()?
+            }
+            (KeyCode::Char('j'), KeyModifiers::CONTROL) => {
+                app_interactor.select_next();
+            }
+            (KeyCode::Char('k'), KeyModifiers::CONTROL) => {
+                app_interactor.select_previous();
             }
             _ => {}
         },

@@ -4,7 +4,7 @@ use grep::regex::RegexMatcher;
 use grep::searcher::sinks::UTF8;
 use grep::searcher::SearcherBuilder;
 
-use crate::ui::list_index::ListIndex;
+use crate::ui::components::list_index::ListIndex;
 
 pub struct FilteredList {
     list_index: ListIndex,
@@ -81,8 +81,10 @@ impl FilteredList {
                 Ok(true)
             }),
         )?;
+        let old_index = self.list_index.get_index().unwrap_or(0);
         self.filtered_indexes = matches.iter().map(|x| *x as usize).collect();
         self.list_index = ListIndex::new(self.filtered_indexes.len());
+        self.list_index.increment_n(old_index as u16);
         Ok(())
     }
 }
