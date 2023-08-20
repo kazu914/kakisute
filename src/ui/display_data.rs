@@ -24,6 +24,7 @@ pub struct DisplayData<'a> {
     pub search_query: BlockData<String>,
     pub help: BlockData<String>,
     pub delete_modal: BlockData<&'a str>,
+    pub need_search_box: bool,
 }
 
 pub struct Info<'a> {
@@ -41,9 +42,9 @@ impl<'a> DisplayData<'a> {
 
         let content = DisplayData::create_content(info.content);
 
-        let new_filename = DisplayData::create_new_filename_modal(info.new_filename);
+        let new_filename = DisplayData::create_new_filename_modal(&info.new_filename);
 
-        let search_query = DisplayData::create_search_query_modal(info.search_query);
+        let search_query = DisplayData::create_search_query_modal(&info.search_query);
 
         let help = DisplayData::create_help(&info.mode);
 
@@ -58,6 +59,7 @@ impl<'a> DisplayData<'a> {
             search_query,
             help,
             delete_modal,
+            need_search_box: !info.search_query.is_empty() || info.mode == Mode::Search,
         }
     }
 
@@ -86,12 +88,12 @@ impl<'a> DisplayData<'a> {
         BlockData::new(content_body, CONTENT_TITLE)
     }
 
-    fn create_new_filename_modal(user_input: String) -> BlockData<String> {
-        BlockData::new(user_input, NEW_FILE_NAME_MODAL_TITLE)
+    fn create_new_filename_modal(user_input: &str) -> BlockData<String> {
+        BlockData::new(user_input.to_string(), NEW_FILE_NAME_MODAL_TITLE)
     }
 
-    fn create_search_query_modal(user_input: String) -> BlockData<String> {
-        BlockData::new(user_input, SEARCH_MODAL_TITLE)
+    fn create_search_query_modal(user_input: &str) -> BlockData<String> {
+        BlockData::new(user_input.to_string(), SEARCH_MODAL_TITLE)
     }
 
     fn create_help(mode: &Mode) -> BlockData<String> {

@@ -23,9 +23,11 @@ pub const LIST_WIDTH_PERCENT: u16 = 20;
 pub const CONTENT_WIDTH_PERCENT: u16 = 80;
 pub const MARGIN: u16 = 1;
 
-fn build_main_layout<B: Backend>(f: &mut Frame<B>, mode: &Mode) -> Vec<Rect> {
-    match mode {
-        Mode::Search => Layout::default()
+/// Build main layout
+/// If need_search_box is true, build layout with search box
+fn build_main_layout<B: Backend>(f: &mut Frame<B>, need_search_box: bool) -> Vec<Rect> {
+    if need_search_box {
+        Layout::default()
             .direction(Direction::Vertical)
             .margin(MARGIN)
             .constraints(
@@ -36,8 +38,9 @@ fn build_main_layout<B: Backend>(f: &mut Frame<B>, mode: &Mode) -> Vec<Rect> {
                 ]
                 .as_ref(),
             )
-            .split(f.size()),
-        _ => Layout::default()
+            .split(f.size())
+    } else {
+        Layout::default()
             .direction(Direction::Vertical)
             .margin(MARGIN)
             .constraints(
@@ -47,12 +50,12 @@ fn build_main_layout<B: Backend>(f: &mut Frame<B>, mode: &Mode) -> Vec<Rect> {
                 ]
                 .as_ref(),
             )
-            .split(f.size()),
+            .split(f.size())
     }
 }
 
 pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
-    let chunks = build_main_layout(f, &display_data.mode);
+    let chunks = build_main_layout(f, display_data.need_search_box);
     let content_chunk = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(
@@ -104,6 +107,31 @@ pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
     );
     f.render_widget(help, chunks[chunks.len() - 1]);
 
+    if display_data.need_search_box {
+        // Use blue color only if focused
+        let border_color = if display_data.mode == Mode::Search {
+            Color::Blue
+        } else {
+            Color::White
+        };
+        let input = Paragraph::new(display_data.search_query.body.clone())
+            .style(Style::default().fg(border_color))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(display_data.search_query.title),
+            );
+        f.render_widget(input, chunks[1]);
+
+        // Show the cursor when in search mode
+        if display_data.mode == Mode::Search {
+            f.set_cursor(
+                chunks[1].x + display_data.search_query.body.width_cjk() as u16 + 1,
+                chunks[1].y + 1,
+            )
+        }
+    }
+
     match display_data.mode {
         Mode::Insert => {
             let input = Paragraph::new(display_data.new_filename.body.clone())
@@ -134,20 +162,6 @@ pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
             let area = centered_rect(50, 3, f.size());
             f.render_widget(Clear, area); //this clears out the background
             f.render_widget(input, area);
-        }
-        Mode::Search => {
-            let input = Paragraph::new(display_data.search_query.body.clone())
-                .style(Style::default().fg(Color::Blue))
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .title(display_data.search_query.title),
-                );
-            f.render_widget(input, chunks[1]);
-            f.set_cursor(
-                chunks[1].x + display_data.search_query.body.width_cjk() as u16 + 1,
-                chunks[1].y + 1,
-            )
         }
         _ => {}
     }
