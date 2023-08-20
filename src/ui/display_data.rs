@@ -7,7 +7,6 @@ const NO_FILE_BODY: &str = "<No file is selected>";
 const CONTENT_TITLE: &str = "Content";
 const NEW_FILE_NAME_MODAL_TITLE: &str = "Input new file name";
 const SEARCH_MODAL_TITLE: &str = "Input search query";
-const MODAL_TITLE_DEFAULT: &str = "Input";
 const HELP_NORMAL_BODY: &str =
     "esc/q: Quit, j: Down, k: Up, ^d: Down 1/2 screen, ^u: Up 1/2 screen, e: Edit, n: Create new, N: Create new with file name, d: Delete";
 
@@ -21,7 +20,8 @@ pub struct DisplayData<'a> {
     pub mode: Mode,
     pub kakisute_list: BlockData<Vec<&'a str>>,
     pub content: BlockData<String>,
-    pub user_input: BlockData<&'a str>,
+    pub new_filename: BlockData<String>,
+    pub search_query: BlockData<String>,
     pub help: BlockData<String>,
     pub delete_modal: BlockData<&'a str>,
 }
@@ -31,7 +31,8 @@ pub struct Info<'a> {
     pub mode: Mode,
     pub kakisute_list: Vec<&'a str>,
     pub content: Option<String>,
-    pub user_input: &'a str,
+    pub new_filename: String,
+    pub search_query: String,
 }
 
 impl<'a> DisplayData<'a> {
@@ -40,7 +41,9 @@ impl<'a> DisplayData<'a> {
 
         let content = DisplayData::create_content(info.content);
 
-        let user_input = DisplayData::create_user_input_modal(info.user_input, &info.mode);
+        let new_filename = DisplayData::create_new_filename_modal(info.new_filename);
+
+        let search_query = DisplayData::create_search_query_modal(info.search_query);
 
         let help = DisplayData::create_help(&info.mode);
 
@@ -51,7 +54,8 @@ impl<'a> DisplayData<'a> {
             mode: info.mode,
             kakisute_list,
             content,
-            user_input,
+            new_filename,
+            search_query,
             help,
             delete_modal,
         }
@@ -82,15 +86,12 @@ impl<'a> DisplayData<'a> {
         BlockData::new(content_body, CONTENT_TITLE)
     }
 
-    fn create_user_input_modal(user_input: &'a str, mode: &Mode) -> BlockData<&'a str> {
-        BlockData::new(
-            user_input,
-            match mode {
-                Mode::Insert => NEW_FILE_NAME_MODAL_TITLE,
-                Mode::Search => SEARCH_MODAL_TITLE,
-                _ => MODAL_TITLE_DEFAULT,
-            },
-        )
+    fn create_new_filename_modal(user_input: String) -> BlockData<String> {
+        BlockData::new(user_input, NEW_FILE_NAME_MODAL_TITLE)
+    }
+
+    fn create_search_query_modal(user_input: String) -> BlockData<String> {
+        BlockData::new(user_input, SEARCH_MODAL_TITLE)
     }
 
     fn create_help(mode: &Mode) -> BlockData<String> {

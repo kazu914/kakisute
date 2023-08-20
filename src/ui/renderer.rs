@@ -106,19 +106,19 @@ pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
 
     match display_data.mode {
         Mode::Insert => {
-            let input = Paragraph::new(display_data.user_input.body)
+            let input = Paragraph::new(display_data.new_filename.body.clone())
                 .style(Style::default().fg(Color::Blue))
                 .block(
                     Block::default()
                         .borders(Borders::ALL)
-                        .title(display_data.user_input.title)
+                        .title(display_data.new_filename.title)
                         .title_alignment(Alignment::Center),
                 );
             let area = centered_rect(50, 3, f.size());
             f.render_widget(Clear, area); //this clears out the background
             f.render_widget(input, area);
             f.set_cursor(
-                area.x + display_data.user_input.body.width_cjk() as u16 + 1,
+                area.x + display_data.new_filename.body.width_cjk() as u16 + 1,
                 area.y + 1,
             )
         }
@@ -136,16 +136,16 @@ pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
             f.render_widget(input, area);
         }
         Mode::Search => {
-            let input = Paragraph::new(display_data.user_input.body)
+            let input = Paragraph::new(display_data.search_query.body.clone())
                 .style(Style::default().fg(Color::Blue))
                 .block(
                     Block::default()
                         .borders(Borders::ALL)
-                        .title(display_data.user_input.title),
+                        .title(display_data.search_query.title),
                 );
             f.render_widget(input, chunks[1]);
             f.set_cursor(
-                chunks[1].x + display_data.user_input.body.width_cjk() as u16 + 1,
+                chunks[1].x + display_data.search_query.body.width_cjk() as u16 + 1,
                 chunks[1].y + 1,
             )
         }
