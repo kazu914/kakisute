@@ -113,6 +113,12 @@ pub fn handle_input(
                 app_interactor.pop_text_input();
                 app_interactor.filter()?
             }
+            (KeyCode::Char('j'), KeyModifiers::CONTROL) => {
+                app_interactor.select_next();
+            }
+            (KeyCode::Char('k'), KeyModifiers::CONTROL) => {
+                app_interactor.select_previous();
+            }
             _ => {}
         },
     }
