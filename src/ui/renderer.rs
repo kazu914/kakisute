@@ -14,7 +14,7 @@ use tui::{
     Frame,
 };
 
-use super::app_interactor::Mode;
+use super::{app_interactor::Mode, display_data::BlockData};
 
 pub const SEARCH_BOX_LENGTH: u16 = 3;
 pub const HELP_BOX_LENGTH: u16 = 3;
@@ -54,6 +54,76 @@ fn build_main_layout<B: Backend>(f: &mut Frame<B>, need_search_box: bool) -> Vec
     }
 }
 
+fn generate_filename_list<'a>(kakisute_list: BlockData<Vec<&'a str>>, mode: &Mode) -> List<'a> {
+    let file_names = kakisute_list
+        .body
+        .iter()
+        .map(|file_name| ListItem::new(file_name.to_string()))
+        .collect::<Vec<ListItem>>();
+
+    List::new(file_names)
+        .block(
+            Block::default()
+                .title(kakisute_list.title.clone())
+                .borders(Borders::ALL)
+                .border_style(match mode {
+                    Mode::Normal => Style::default().fg(Color::Blue),
+                    _ => Style::default(),
+                }),
+        )
+        .highlight_style(Style::default().bg(Color::Blue).fg(Color::Black))
+        .highlight_symbol(">>")
+}
+
+fn generate_kakisute_content<'a>(content: BlockData<String>) -> Paragraph<'a> {
+    Paragraph::new(Text::from(content.body))
+        .wrap(Wrap { trim: false })
+        .block(Block::default().title(content.title).borders(Borders::ALL))
+}
+
+fn generate_help<'a>(help: BlockData<String>) -> Paragraph<'a> {
+    Paragraph::new(Text::from(help.body))
+        .block(Block::default().title(help.title).borders(Borders::ALL))
+}
+
+fn generate_input_box<'a>(new_filename: &BlockData<String>) -> Paragraph<'a> {
+    Paragraph::new(new_filename.body.clone())
+        .style(Style::default().fg(Color::Blue))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(new_filename.title.clone())
+                .title_alignment(Alignment::Center),
+        )
+}
+
+fn generate_search_box<'a>(search_query: &BlockData<String>, mode: &Mode) -> Paragraph<'a> {
+    // Use blue color only if focused
+    let border_color = if mode == &Mode::Search {
+        Color::Blue
+    } else {
+        Color::White
+    };
+    Paragraph::new(search_query.body.clone())
+        .style(Style::default().fg(border_color))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(search_query.title.clone()),
+        )
+}
+
+fn generate_delete_modal<'a>(delete_modal: &BlockData<&'a str>) -> Paragraph<'a> {
+    Paragraph::new(delete_modal.body)
+        .style(Style::default().fg(Color::Red))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(delete_modal.title.clone())
+                .title_alignment(Alignment::Center),
+        )
+}
+
 pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
     let chunks = build_main_layout(f, display_data.need_search_box);
     let content_chunk = Layout::default()
@@ -67,61 +137,20 @@ pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
         )
         .split(chunks[0]);
 
-    let file_names = display_data
-        .kakisute_list
-        .body
-        .iter()
-        .map(|file_name| ListItem::new(file_name.to_string()))
-        .collect::<Vec<ListItem>>();
-
-    let list = List::new(file_names)
-        .block(
-            Block::default()
-                .title(display_data.kakisute_list.title)
-                .borders(Borders::ALL)
-                .border_style(match display_data.mode {
-                    Mode::Normal => Style::default().fg(Color::Blue),
-                    _ => Style::default(),
-                }),
-        )
-        .highlight_style(Style::default().bg(Color::Blue).fg(Color::Black))
-        .highlight_symbol(">>");
+    let filename_list = generate_filename_list(display_data.kakisute_list, &display_data.mode);
     let mut state = ListState::default();
     state.select(display_data.index);
+    f.render_stateful_widget(filename_list, content_chunk[0], &mut state);
 
-    f.render_stateful_widget(list, content_chunk[0], &mut state);
+    let kakisute_content = generate_kakisute_content(display_data.content);
+    f.render_widget(kakisute_content, content_chunk[1]);
 
-    let paragraph = Paragraph::new(Text::from(display_data.content.body))
-        .wrap(Wrap { trim: false })
-        .block(
-            Block::default()
-                .title(display_data.content.title)
-                .borders(Borders::ALL),
-        );
-    f.render_widget(paragraph, content_chunk[1]);
-
-    let help = Paragraph::new(Text::from(display_data.help.body)).block(
-        Block::default()
-            .title(display_data.help.title)
-            .borders(Borders::ALL),
-    );
+    let help = generate_help(display_data.help);
     f.render_widget(help, chunks[chunks.len() - 1]);
 
     if display_data.need_search_box {
-        // Use blue color only if focused
-        let border_color = if display_data.mode == Mode::Search {
-            Color::Blue
-        } else {
-            Color::White
-        };
-        let input = Paragraph::new(display_data.search_query.body.clone())
-            .style(Style::default().fg(border_color))
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title(display_data.search_query.title),
-            );
-        f.render_widget(input, chunks[1]);
+        let search_box = generate_search_box(&display_data.search_query, &display_data.mode);
+        f.render_widget(search_box, chunks[1]);
 
         // Show the cursor when in search mode
         if display_data.mode == Mode::Search {
@@ -134,14 +163,7 @@ pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
 
     match display_data.mode {
         Mode::Insert => {
-            let input = Paragraph::new(display_data.new_filename.body.clone())
-                .style(Style::default().fg(Color::Blue))
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .title(display_data.new_filename.title)
-                        .title_alignment(Alignment::Center),
-                );
+            let input = generate_input_box(&display_data.new_filename);
             let area = centered_rect(50, 3, f.size());
             f.render_widget(Clear, area); //this clears out the background
             f.render_widget(input, area);
@@ -151,14 +173,7 @@ pub fn render<B: Backend>(f: &mut Frame<B>, display_data: DisplayData) {
             )
         }
         Mode::DeleteConfirm => {
-            let input = Paragraph::new(display_data.delete_modal.body)
-                .style(Style::default().fg(Color::Red))
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .title(display_data.delete_modal.title)
-                        .title_alignment(Alignment::Center),
-                );
+            let input = generate_delete_modal(&display_data.delete_modal);
             let area = centered_rect(50, 3, f.size());
             f.render_widget(Clear, area); //this clears out the background
             f.render_widget(input, area);
