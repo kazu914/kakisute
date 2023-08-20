@@ -4,7 +4,7 @@ use grep::regex::RegexMatcher;
 use grep::searcher::sinks::UTF8;
 use grep::searcher::SearcherBuilder;
 
-use crate::ui::list_index::ListIndex;
+use crate::ui::components::list_index::ListIndex;
 
 pub struct FilteredList {
     list_index: ListIndex,
